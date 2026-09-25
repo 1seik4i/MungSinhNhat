@@ -8,7 +8,7 @@ const DEFAULT_MEMORIES = [
     id: 1,
     title: 'Nụ Cười Tỏa Nắng',
     date: 'Mùa hè rực rỡ',
-    caption: 'Chúc bạn luôn giữ trọn nụ cười hồn nhiên và rạng ngời này trên môi!',
+    caption: 'Chúc em luôn giữ trọn nụ cười hồn nhiên và rạng ngời này trên môi!',
     image: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=600&auto=format&fit=crop&q=80',
     rotate: -3
   },
@@ -16,7 +16,7 @@ const DEFAULT_MEMORIES = [
     id: 2,
     title: 'Những Chuyến Đi Xa',
     date: 'Thanh xuân phiêu lưu',
-    caption: 'Mong bạn sẽ đi đến bất cứ nơi đâu bạn muốn và khám phá muôn điều kỳ diệu.',
+    caption: 'Mong em sẽ đi đến bất cứ nơi đâu em muốn và khám phá muôn điều kỳ diệu.',
     image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80',
     rotate: 2
   },
@@ -32,7 +32,7 @@ const DEFAULT_MEMORIES = [
     id: 4,
     title: 'Rạng Rỡ Đón Tuổi Mới',
     date: 'Sinh nhật ý nghĩa',
-    caption: 'Tuổi mới mở ra những trang sách tuyệt vời nhất trong cuộc đời bạn!',
+    caption: 'Tuổi mới mở ra những trang sách tuyệt vời nhất trong cuộc đời em!',
     image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600&auto=format&fit=crop&q=80',
     rotate: 3
   }

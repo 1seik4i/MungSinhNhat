@@ -52,7 +52,7 @@ let customCards = {
     name: 'Minh Anh',
     birthDate: '05/10',
     title: 'Chúc Mừng Sinh Nhật',
-    message: 'Chúc bạn một ngày sinh nhật thật vui vẻ và hạnh phúc! Mong rằng mọi ước mơ của bạn sẽ sớm thành hiện thực, cuộc sống luôn tràn ngập tiếng cười, sự tự tin và thành công rực rỡ. Cảm ơn vì đã là một phần tuyệt vời trong thế giới này! 💖🌸',
+    message: 'Chúc em một ngày sinh nhật thật vui vẻ và hạnh phúc! Mong rằng mọi ước mơ của em sẽ sớm thành hiện thực, cuộc sống luôn tràn ngập tiếng cười, sự tự tin và thành công rực rỡ. Cảm ơn vì đã là một phần tuyệt vời trong thế giới này! 💖🌸',
     theme: 'galaxy', // galaxy, sakura, twilight, sunset, aurora
     musicTheme: 'lofi',
     photos: []

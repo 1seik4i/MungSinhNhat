@@ -147,7 +147,7 @@ export default function HeroHeader({
             fontWeight: 400,
           }}
         >
-          {cardData.message || `Chúc bạn một ngày sinh nhật thật rực rỡ, ấm áp và đong đầy nụ cười!\nƯớc mong tuổi mới của bạn sẽ mở ra ngàn vạn điều may mắn, vạn sự hanh thông và luôn xinh đẹp rạng ngời như ánh ban mai.`}
+          {cardData.message || `Chúc em một ngày sinh nhật thật rực rỡ, ấm áp và đong đầy nụ cười!\nƯớc mong tuổi mới của em sẽ mở ra ngàn vạn điều may mắn, vạn sự hanh thông và luôn xinh đẹp rạng ngời như ánh ban mai.`}
         </p>
 
         {/* Feature Action Buttons */}

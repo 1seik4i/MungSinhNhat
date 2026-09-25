@@ -165,7 +165,7 @@ export default function InteractiveCake() {
       checkBlow();
     } catch (err) {
       console.warn('Microphone permission not granted or unsupported:', err);
-      alert('Không thể kích hoạt micro (bạn có thể nhấn nút "Thổi Tắt Nến" bên dưới thay thế nhé!)');
+      alert('Không thể kích hoạt micro (em có thể nhấn nút "Thổi Tắt Nến" bên dưới thay thế nhé!)');
       stopMic();
     }
   };
@@ -324,10 +324,10 @@ export default function InteractiveCake() {
               }}
             >
               <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--accent-gold)' }}>
-                ✨ Ước Nguyện Của Bạn Đã Bay Lên Vũ Trụ! ✨
+                ✨ Ước Nguyện Của Em Đã Bay Lên Vũ Trụ! ✨
               </div>
               <p style={{ fontSize: '0.95rem', color: 'var(--text-main, #2d2427)', fontWeight: 500, marginTop: '6px', lineHeight: 1.5 }}>
-                Cả bầu trời sao đang lắng nghe và sẽ biến mọi điều ước tốt đẹp nhất của bạn thành hiện thực! 🌟
+                Cả bầu trời sao đang lắng nghe và sẽ biến mọi điều ước tốt đẹp nhất của em thành hiện thực! 🌟
               </p>
             </motion.div>
           )}

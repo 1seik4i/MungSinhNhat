@@ -50,26 +50,26 @@
 
 ```text
 [BẮT ĐẦU - MÀN HÌNH HIỂN THỊ PHONG THƯ NIÊM PHONG SÁP ĐỎ]
-MC: "Chào bạn! Hôm nay là một ngày vô cùng đặc biệt — ngày mà một thiên thần đã xuất hiện trên thế giới này. 
-Chúng mình có một bức thư bí mật dành riêng cho bạn. Hãy chạm tay vào dấu sáp đỏ để mở ra điều bất ngờ đầu tiên nhé..."
+MC: "Chào em! Hôm nay là một ngày vô cùng đặc biệt — ngày mà một thiên thần đã xuất hiện trên thế giới này. 
+Chúng mình có một bức thư bí mật dành riêng cho em. Hãy chạm tay vào dấu sáp đỏ để mở ra điều bất ngờ đầu tiên nhé..."
 
 [KHI PHONG THƯ MỞ RA - PHÁO GIẤY BẮN TƯNG BỪNG]
 MC: "Chúc mừng sinh nhật! Bức thư chứa chan những tình cảm ấm áp nhất đã được mở ra. 
 Bây giờ, hãy cùng bước vào bữa tiệc sinh nhật nào!"
 
 [CUỘN ĐẾN KHU VỰC BÁNH KEM 3D]
-MC: "Trước mắt bạn là chiếc bánh kem dâu tây ngọt ngào với những ngọn nến đang thắp sáng lung linh. 
+MC: "Trước mắt em là chiếc bánh kem dâu tây ngọt ngào với những ngọn nến đang thắp sáng lung linh. 
 Hãy nhắm mắt lại, nghĩ về điều ước tuyệt vời nhất trong tuổi mới của mình... 
-Và bạn có thể bấm 'Bật Micro' để ghé sát và thổi một hơi thật mạnh, hoặc chạm vào từng ngọn nến để dập tắt chúng nhé!"
+Và em có thể bấm 'Bật Micro' để ghé sát và thổi một hơi thật mạnh, hoặc chạm vào từng ngọn nến để dập tắt chúng nhé!"
 
 [KHI NẾN TẮT HẾT - PHÁO HOA VÀ SAO VÀNG BAY LÊN]
-MC: "Tuyệt vời! Ngọn nến đã tắt, điều ước của bạn đã chính thức được gửi lên các vì sao trên bầu trời vũ trụ! 
-Chúc cho mọi ước mơ của bạn trong tuổi mới đều sẽ sớm trở thành hiện thực!"
+MC: "Tuyệt vời! Ngọn nến đã tắt, điều ước của em đã chính thức được gửi lên các vì sao trên bầu trời vũ trụ! 
+Chúc cho mọi ước mơ của em trong tuổi mới đều sẽ sớm trở thành hiện thực!"
 
 [KHI XEM ẢNH KỶ NIỆM VÀ MỞ QUÀ]
 MC: "Hãy cùng nhìn lại những khoảnh khắc tuyệt đẹp mà chúng ta đã cùng nhau trải qua trong cuốn album Polaroid này, 
-và đừng quên mở hộp quà bí mật cũng như bẻ chiếc bánh quy may mắn để xem vũ trụ nhắn nhủ điều gì đến bạn nhé. 
-Chúc bạn một ngày sinh nhật thật hạnh phúc và rực rỡ!"
+và đừng quên mở hộp quà bí mật cũng như bẻ chiếc bánh quy may mắn để xem vũ trụ nhắn nhủ điều gì đến em nhé. 
+Chúc em một ngày sinh nhật thật hạnh phúc và rực rỡ!"
 ```
 
 ---
