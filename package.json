@@ -8,7 +8,7 @@
     "dev:server": "node server/index.js",
     "server": "node server/index.js",
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
-    "build": "vite build",
+    "build": "node ./node_modules/vite/bin/vite.js build",
     "preview": "vite preview",
     "start": "node server/index.js"
   },
