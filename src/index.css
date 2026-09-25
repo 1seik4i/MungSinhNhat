@@ -645,22 +645,38 @@ body::after {
     border-radius: 50% !important;
   }
   .wish-submit span { display: none; }
+  .music-player-wrapper {
+    left: 50% !important;
+    right: auto !important;
+    bottom: 16px !important;
+    transform: translateX(-50%) !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: max-content !important;
+    max-width: calc(100vw - 20px) !important;
+    pointer-events: none;
+  }
+  .music-player-wrapper > * {
+    pointer-events: auto;
+  }
   .music-player-card {
-    width: min(360px, calc(100vw - 32px)) !important;
+    width: min(390px, calc(100vw - 24px)) !important;
     min-height: 106px;
     aspect-ratio: auto !important;
     display: grid !important;
-    grid-template-columns: 58px minmax(0, 1fr) auto;
+    grid-template-columns: 56px minmax(0, 1fr) auto;
     grid-template-rows: auto auto auto;
     align-items: center !important;
     gap: 5px 10px;
-    padding: 13px !important;
-    border-radius: 20px !important;
+    padding: 12px 14px !important;
+    border-radius: 22px !important;
+    box-shadow: 0 14px 35px rgba(0, 0, 0, 0.7), 0 0 24px rgba(255, 107, 157, 0.3) !important;
   }
   .music-player-disc {
     grid-row: 1 / 3;
-    width: 54px !important;
-    height: 54px !important;
+    width: 52px !important;
+    height: 52px !important;
   }
   .music-player-disc svg { width: 22px; height: 22px; }
   .music-player-info {

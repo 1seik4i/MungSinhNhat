@@ -230,7 +230,7 @@ export default function MusicPlayer({ customTracks = [] }) {
   const isHidden = isMinimized || isAutoHidden;
 
   return (
-    <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 900 }}>
+    <div className="music-player-wrapper" style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 900 }}>
       <audio ref={audioRef} onLoadedMetadata={(event) => setPlayback({ current: 0, duration: event.currentTarget.duration })} onTimeUpdate={(event) => setPlayback({ current: event.currentTarget.currentTime, duration: event.currentTarget.duration })} onEnded={nextTrack} onPause={() => setIsPlaying(false)} />
       {youtubeTrack && <iframe ref={youtubeFrameRef} title="Trình phát nhạc YouTube" onLoad={() => { youtubeCommand('addEventListener', ['onStateChange']); youtubeCommand('getDuration'); }} src={`https://www.youtube.com/embed/${youtubeTrack.source}?autoplay=1&controls=0&rel=0&playsinline=1&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`} allow="autoplay; encrypted-media" style={{ position: 'fixed', width: '1px', height: '1px', opacity: 0, pointerEvents: 'none', left: '-10px', bottom: '-10px' }} />}
 
