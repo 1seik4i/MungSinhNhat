@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, GripVertical, ImagePlus, Link, Music2, Plus, Save, Trash2, Upload, CheckCircle2, AlertCircle, Info, X, Loader2 } from 'lucide-react';
-import { getYouTubeVideoId, loadContentSettings, saveAudioFile, saveContentSettings, compressImageFile, deleteAudioFile } from '../utils/contentSettings';
+import { getYouTubeVideoId, loadContentSettings, fetchServerContentSettings, saveAudioFile, saveContentSettings, compressImageFile, deleteAudioFile } from '../utils/contentSettings';
 
 const fieldStyle = { width: '100%', marginTop: '6px', boxSizing: 'border-box', border: '1px solid #ead6d2', borderRadius: '10px', padding: '11px 12px', font: 'inherit', fontWeight: 400, background: '#fffdfb' };
 
@@ -14,6 +14,17 @@ export default function EditorPage({ onExit, onSaved }) {
   const musicFileRef = useRef(null);
   const imageFileRef = useRef(null);
   const selectedMemory = settings.memories.find((memory) => memory.id === selectedMemoryId) || settings.memories[0];
+
+  useEffect(() => {
+    fetchServerContentSettings().then((serverSettings) => {
+      if (serverSettings) {
+        setSettings(serverSettings);
+        if (!selectedMemoryId && serverSettings.memories?.[0]?.id) {
+          setSelectedMemoryId(serverSettings.memories[0].id);
+        }
+      }
+    });
+  }, []);
 
   const showNotification = (type, text, duration = 3800) => {
     setNotification({ type, text });

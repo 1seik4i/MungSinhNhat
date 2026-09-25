@@ -1,0 +1,57 @@
+{
+  "cardData": {
+    "name": "Minh Anh",
+    "birthDate": "05 / 10",
+    "title": "Chúc Mừng Sinh Nhật",
+    "message": "Chúc em một ngày sinh nhật thật rực rỡ, ấm áp và đong đầy nụ cười!\nƯớc mong tuổi mới của em sẽ mở ra ngàn vạn điều may mắn, vạn sự hanh thông và luôn xinh đẹp rạng ngời như ánh ban mai. 💖🌸"
+  },
+  "surpriseCards": {
+    "gift": {
+      "image": "",
+      "title": "Hộp quà bí mật",
+      "description": "Một món quà nhỏ đang chờ em mở ra.",
+      "action": "Mở hộp quà"
+    },
+    "fortune": {
+      "image": "",
+      "title": "Gieo thẻ sinh nhật",
+      "description": "Khám phá một lời nhắn may mắn cho tuổi mới.",
+      "action": "Gieo thẻ ngay"
+    }
+  },
+  "memories": [
+    {
+      "id": "memory-1",
+      "title": "Nụ Cười Tỏa Nắng",
+      "date": "Mùa hè rực rỡ",
+      "caption": "Chúc em luôn giữ trọn nụ cười hồn nhiên và rạng ngời này trên môi!",
+      "image": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=600&auto=format&fit=crop&q=80",
+      "rotate": -3
+    },
+    {
+      "id": "memory-2",
+      "title": "Những Chuyến Đi Xa",
+      "date": "Thanh xuân phiêu lưu",
+      "caption": "Mong em sẽ đi đến bất cứ nơi đâu em muốn và khám phá muôn điều kỳ diệu.",
+      "image": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80",
+      "rotate": 2
+    },
+    {
+      "id": "memory-3",
+      "title": "Khoảnh Khắc Bình Yên",
+      "date": "Những ngày thảnh thơi",
+      "caption": "Mỗi ngày trôi qua đều là một món quà đáng trân trọng và ngập tràn niềm vui.",
+      "image": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=600&auto=format&fit=crop&q=80",
+      "rotate": -2
+    },
+    {
+      "id": "memory-4",
+      "title": "Rạng Rỡ Đón Tuổi Mới",
+      "date": "Sinh nhật ý nghĩa",
+      "caption": "Tuổi mới mở ra những trang sách tuyệt vời nhất trong cuộc đời em!",
+      "image": "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600&auto=format&fit=crop&q=80",
+      "rotate": 3
+    }
+  ],
+  "tracks": []
+}

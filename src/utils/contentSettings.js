@@ -39,6 +39,36 @@ export function loadContentSettings() {
   }
 }
 
+// Fetch settings from server to sync desktop & mobile across different devices/browsers
+export async function fetchServerContentSettings() {
+  try {
+    const res = await fetch('/api/content-settings');
+    if (!res.ok) return null;
+    const json = await res.json();
+    if (json.success && json.data) {
+      const serverData = json.data;
+      const merged = {
+        ...DEFAULT_CONTENT,
+        ...serverData,
+        surpriseCards: { ...DEFAULT_CONTENT.surpriseCards, ...serverData.surpriseCards },
+        cardData: { ...DEFAULT_CONTENT.cardData, ...serverData.cardData },
+        memories: Array.isArray(serverData.memories) ? serverData.memories : DEFAULT_CONTENT.memories,
+        tracks: Array.isArray(serverData.tracks) ? serverData.tracks : [],
+      };
+      // Keep local storage up to date with server data
+      try {
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(merged));
+      } catch (e) {
+        console.warn('Could not write server data to localStorage:', e);
+      }
+      return merged;
+    }
+  } catch (err) {
+    console.warn('Could not sync with /api/content-settings:', err);
+  }
+  return null;
+}
+
 export function compressImageFile(file, maxWidth = 1200, maxHeight = 1200, quality = 0.82) {
   return new Promise((resolve, reject) => {
     if (!file || !file.type.startsWith('image/')) {
@@ -89,14 +119,23 @@ export function saveContentSettings(settings) {
   try {
     const serialized = JSON.stringify(settings);
     localStorage.setItem(SETTINGS_KEY, serialized);
-    return { success: true };
   } catch (err) {
-    console.error('Failed to save content settings:', err);
+    console.error('Failed to save to localStorage:', err);
     if (err.name === 'QuotaExceededError' || err.code === 22) {
       throw new Error('Bộ nhớ trình duyệt bị đầy do ảnh dung lượng quá lớn. Hệ thống đã tự động nén ảnh, vui lòng thử lại hoặc giảm bớt số lượng ảnh.');
     }
-    throw new Error('Không thể lưu dữ liệu: ' + (err.message || 'Lỗi không xác định'));
   }
+
+  // Asynchronously sync to backend server so mobile / other devices can load it
+  fetch('/api/content-settings', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(settings),
+  }).catch((err) => {
+    console.warn('Could not sync content settings to server API:', err);
+  });
+
+  return { success: true };
 }
 
 export function getYouTubeVideoId(value) {

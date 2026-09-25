@@ -11,7 +11,57 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+const SETTINGS_FILE = path.join(__dirname, 'contentSettings.json');
+
+// Default initial content settings
+const DEFAULT_CONTENT = {
+  cardData: {
+    name: 'Minh Anh',
+    birthDate: '05 / 10',
+    title: 'Chúc Mừng Sinh Nhật',
+    message: 'Chúc em một ngày sinh nhật thật rực rỡ, ấm áp và đong đầy nụ cười!\nƯớc mong tuổi mới của em sẽ mở ra ngàn vạn điều may mắn, vạn sự hanh thông và luôn xinh đẹp rạng ngời như ánh ban mai. 💖🌸',
+  },
+  surpriseCards: {
+    gift: { image: '', title: 'Hộp quà bí mật', description: 'Một món quà nhỏ đang chờ em mở ra.', action: 'Mở hộp quà' },
+    fortune: { image: '', title: 'Gieo thẻ sinh nhật', description: 'Khám phá một lời nhắn may mắn cho tuổi mới.', action: 'Gieo thẻ ngay' },
+  },
+  memories: [
+    { id: 'memory-1', title: 'Nụ Cười Tỏa Nắng', date: 'Mùa hè rực rỡ', caption: 'Chúc em luôn giữ trọn nụ cười hồn nhiên và rạng ngời này trên môi!', image: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=600&auto=format&fit=crop&q=80', rotate: -3 },
+    { id: 'memory-2', title: 'Những Chuyến Đi Xa', date: 'Thanh xuân phiêu lưu', caption: 'Mong em sẽ đi đến bất cứ nơi đâu em muốn và khám phá muôn điều kỳ diệu.', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80', rotate: 2 },
+    { id: 'memory-3', title: 'Khoảnh Khắc Bình Yên', date: 'Những ngày thảnh thơi', caption: 'Mỗi ngày trôi qua đều là một món quà đáng trân trọng và ngập tràn niềm vui.', image: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=600&auto=format&fit=crop&q=80', rotate: -2 },
+    { id: 'memory-4', title: 'Rạng Rỡ Đón Tuổi Mới', date: 'Sinh nhật ý nghĩa', caption: 'Tuổi mới mở ra những trang sách tuyệt vời nhất trong cuộc đời em!', image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600&auto=format&fit=crop&q=80', rotate: 3 },
+  ],
+  tracks: [],
+};
+
+let cachedSettings = null;
+
+function loadStoredSettings() {
+  if (cachedSettings) return cachedSettings;
+  try {
+    if (fs.existsSync(SETTINGS_FILE)) {
+      const data = fs.readFileSync(SETTINGS_FILE, 'utf-8');
+      cachedSettings = JSON.parse(data);
+      return cachedSettings;
+    }
+  } catch (err) {
+    console.warn('Could not read stored content settings:', err);
+  }
+  cachedSettings = { ...DEFAULT_CONTENT };
+  return cachedSettings;
+}
+
+function saveStoredSettings(data) {
+  cachedSettings = data;
+  try {
+    fs.writeFileSync(SETTINGS_FILE, JSON.stringify(data, null, 2), 'utf-8');
+  } catch (err) {
+    console.warn('Could not persist content settings to disk (likely read-only serverless environment):', err);
+  }
+}
 
 // In-memory / initial storage
 let wishes = [
@@ -93,6 +143,35 @@ app.post('/api/wishes/:id/like', (req, res) => {
   }
   wish.likes += 1;
   res.json({ success: true, likes: wish.likes });
+});
+
+// Content Settings Sync API (Sync across desktop and mobile devices)
+app.get('/api/content-settings', (req, res) => {
+  const settings = loadStoredSettings();
+  res.json({ success: true, data: settings });
+});
+
+app.post('/api/content-settings', (req, res) => {
+  try {
+    const newSettings = req.body;
+    if (!newSettings || typeof newSettings !== 'object') {
+      return res.status(400).json({ success: false, message: 'Dữ liệu không hợp lệ' });
+    }
+    const current = loadStoredSettings();
+    const merged = {
+      ...current,
+      ...newSettings,
+      cardData: { ...current.cardData, ...(newSettings.cardData || {}) },
+      surpriseCards: { ...current.surpriseCards, ...(newSettings.surpriseCards || {}) },
+      memories: Array.isArray(newSettings.memories) ? newSettings.memories : current.memories,
+      tracks: Array.isArray(newSettings.tracks) ? newSettings.tracks : current.tracks,
+    };
+    saveStoredSettings(merged);
+    res.json({ success: true, data: merged });
+  } catch (err) {
+    console.error('Error saving content settings:', err);
+    res.status(500).json({ success: false, message: err.message || 'Lỗi lưu trữ dữ liệu' });
+  }
 });
 
 // Card Customizer API

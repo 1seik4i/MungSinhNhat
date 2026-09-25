@@ -89,6 +89,24 @@ export default function MusicPlayer({ customTracks = [] }) {
     };
   }, [isPlaying, youtubeTrack]);
 
+  // Autoplay music when user opens envelope successfully
+  useEffect(() => {
+    const handleEnvelopeOpened = () => {
+      if (tracks.length > 0) {
+        const trackToPlay = tracks[currentTrackIndex] || tracks[0];
+        playTrack(trackToPlay);
+      } else {
+        // Play gentle default birthday synth chime melody if no custom music track
+        soundEngine.init();
+        soundEngine.playMelody('classic');
+        setIsPlaying(true);
+      }
+    };
+
+    window.addEventListener('app:envelope-opened', handleEnvelopeOpened);
+    return () => window.removeEventListener('app:envelope-opened', handleEnvelopeOpened);
+  }, [tracks, currentTrackIndex, volume, isMuted]);
+
   const youtubeCommand = (func, args = []) => {
     youtubeFrameRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func, args }), 'https://www.youtube.com');
   };
@@ -117,12 +135,10 @@ export default function MusicPlayer({ customTracks = [] }) {
   }, []);
 
   useEffect(() => {
-    const firstYoutubeIndex = customTracks.findIndex((track) => track.type === 'youtube');
-    if (firstYoutubeIndex < 0 || hasAutoplayedYoutube.current) return;
-    hasAutoplayedYoutube.current = true;
-    setCurrentTrackIndex(firstYoutubeIndex);
-    setYoutubeTrack(customTracks[firstYoutubeIndex]);
-    setIsPlaying(true);
+    // If tracks change and currently nothing is playing, prepare first track index
+    if (customTracks.length > 0 && currentTrackIndex >= customTracks.length) {
+      setCurrentTrackIndex(0);
+    }
   }, [customTracks]);
 
   useEffect(() => {

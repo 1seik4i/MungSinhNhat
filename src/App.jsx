@@ -12,7 +12,7 @@ import MiniGamesModal from './components/MiniGamesModal';
 import MusicPlayer from './components/MusicPlayer';
 import EditorPage from './components/EditorPage';
 import { launchSideCannons } from './utils/confettiHelper';
-import { getAudioFileUrl, loadContentSettings } from './utils/contentSettings';
+import { getAudioFileUrl, loadContentSettings, fetchServerContentSettings } from './utils/contentSettings';
 import { Heart, Sparkles } from 'lucide-react';
 
 export default function App() {
@@ -25,6 +25,15 @@ export default function App() {
   const isEditorPage = new URLSearchParams(window.location.search).get('edit') === '1';
 
   const [cardData, setCardData] = useState(() => loadContentSettings().cardData);
+
+  // Sync settings with server on app load (ensures desktop edits sync instantly to mobile devices)
+  useEffect(() => {
+    fetchServerContentSettings().then((serverSettings) => {
+      if (serverSettings) {
+        setContentSettings(serverSettings);
+      }
+    });
+  }, []);
 
   // Check URL query parameters for custom cards
   useEffect(() => {
@@ -86,6 +95,8 @@ export default function App() {
     setEnvelopeOpened(true);
     // Two celebratory cannons fire from the screen edges for four seconds.
     launchSideCannons(4000);
+    // Dispatch event to trigger music autoplay smoothly
+    window.dispatchEvent(new CustomEvent('app:envelope-opened'));
   };
 
   const scrollToSection = (id) => {
