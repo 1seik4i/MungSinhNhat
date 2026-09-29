@@ -12,7 +12,7 @@ import MiniGamesModal from './components/MiniGamesModal';
 import MusicPlayer from './components/MusicPlayer';
 import EditorPage from './components/EditorPage';
 import { launchSideCannons } from './utils/confettiHelper';
-import { getAudioFileUrl, loadContentSettings, fetchServerContentSettings, fetchServerTracks } from './utils/contentSettings';
+import { getAudioFileUrl, loadContentSettings, fetchServerContentSettings } from './utils/contentSettings';
 import { Heart, Sparkles } from 'lucide-react';
 
 export default function App() {
@@ -27,20 +27,39 @@ export default function App() {
 
   const [cardData, setCardData] = useState(() => loadContentSettings().cardData);
 
-  // Sync settings with server on app load (ensures desktop edits sync instantly to mobile devices)
+  // Keep the public card aligned with the shared Supabase content on every device.
   useEffect(() => {
-    fetchServerContentSettings().then((serverSettings) => {
-      if (serverSettings) {
-        setContentSettings(serverSettings);
-      }
-    }).finally(() => setContentLoaded(true));
-  }, []);
+    if (isEditorPage) return undefined;
 
-  useEffect(() => {
-    fetchServerTracks().then((tracks) => {
-      if (tracks) setCustomTracks(tracks);
+    let active = true;
+    const refreshContent = async () => {
+      const serverSettings = await fetchServerContentSettings();
+      if (!active || !serverSettings) return;
+      setContentSettings((current) => (
+        JSON.stringify(current) === JSON.stringify(serverSettings) ? current : serverSettings
+      ));
+    };
+
+    refreshContent().finally(() => {
+      if (active) setContentLoaded(true);
     });
-  }, []);
+
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') refreshContent();
+    };
+    window.addEventListener('focus', refreshContent);
+    window.addEventListener('online', refreshContent);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+    const interval = window.setInterval(refreshContent, 10_000);
+
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+      window.removeEventListener('focus', refreshContent);
+      window.removeEventListener('online', refreshContent);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
+  }, [isEditorPage]);
 
   // Check URL query parameters for custom cards
   useEffect(() => {

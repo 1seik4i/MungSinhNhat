@@ -37,7 +37,7 @@ export function loadContentSettings() {
 // Fetch settings from server to sync desktop & mobile across different devices/browsers
 export async function fetchServerContentSettings() {
   try {
-    const res = await fetch('/api/content-settings');
+    const res = await fetch('/api/content-settings', { cache: 'no-store' });
     if (!res.ok) return null;
     const json = await res.json();
     if (json.success && json.data) {
