@@ -138,8 +138,11 @@ export default function App() {
 
   const handleOpenEnvelope = () => {
     setEnvelopeOpened(true);
-    // Two celebratory cannons fire from the screen edges for four seconds.
-    launchSideCannons(4000);
+    // Start after the envelope fade so the celebration is fully visible.
+    window.setTimeout(() => {
+      launchFireworksShow(3000);
+      launchSideCannons(3200);
+    }, 120);
     // Dispatch event to trigger music autoplay smoothly
     window.dispatchEvent(new CustomEvent('app:envelope-opened'));
   };

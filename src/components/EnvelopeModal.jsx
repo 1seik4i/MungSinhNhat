@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { soundEngine } from '../utils/audioSynth';
-import { blastConfetti, blastHearts, blastStars } from '../utils/confettiHelper';
+import { blastConfetti, blastHearts, blastStars, launchFireworksShow } from '../utils/confettiHelper';
 import { Sparkles, Cake, ChevronRight, PartyPopper, Heart } from 'lucide-react';
 
 export default function EnvelopeModal({ recipientName = '', letterMessage = '', onOpen }) {
@@ -25,6 +25,7 @@ export default function EnvelopeModal({ recipientName = '', letterMessage = '', 
     soundEngine.playSparkle();
     setIsOpen(true);
     blastHearts();
+    window.setTimeout(() => launchFireworksShow(1400), 260);
 
     // Trigger celebratory confetti in background smoothly
     setTimeout(() => {
