@@ -49,9 +49,9 @@ export default function EditorPage({ onExit, onSaved }) {
   const save = async () => {
     setIsSaving(true);
     try {
-      await saveContentSettings(settings);
+      const savedSettings = await saveContentSettings(settings);
       showNotification('success', 'Đã lưu tất cả thay đổi thành công!');
-      onSaved?.();
+      onSaved?.(savedSettings);
     } catch (err) {
       console.error(err);
       showNotification('error', err.message || 'Không thể lưu dữ liệu. Vui lòng kiểm tra lại dung lượng ảnh!');

@@ -116,7 +116,7 @@ export default function App() {
 
   if (isEditorPage) {
     return <EditorPage
-      onSaved={() => setContentSettings(loadContentSettings())}
+      onSaved={(savedSettings) => setContentSettings(savedSettings || loadContentSettings())}
       onExit={() => {
         const url = new URL(window.location.href);
         url.searchParams.delete('edit');

@@ -133,12 +133,6 @@ async function readApiError(response, fallback) {
 
 export async function saveContentSettings(settings) {
   const serialized = JSON.stringify(settings);
-  try {
-    localStorage.setItem(SETTINGS_KEY, serialized);
-  } catch (err) {
-    console.warn('Không thể cập nhật bản sao trong trình duyệt:', err);
-  }
-
   const response = await fetch('/api/content-settings', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -146,7 +140,22 @@ export async function saveContentSettings(settings) {
   });
   if (!response.ok) throw new Error(await readApiError(response, 'Không thể lưu thay đổi lên Supabase.'));
   const payload = await response.json();
-  return payload.data;
+  if (!payload.success || !payload.data) throw new Error('Máy chủ không xác nhận được dữ liệu đã lưu.');
+
+  const saved = {
+    ...DEFAULT_CONTENT,
+    ...payload.data,
+    surpriseCards: { ...DEFAULT_CONTENT.surpriseCards, ...payload.data.surpriseCards },
+    cardData: { ...DEFAULT_CONTENT.cardData, ...payload.data.cardData },
+    memories: Array.isArray(payload.data.memories) ? payload.data.memories : [],
+    tracks: Array.isArray(payload.data.tracks) ? payload.data.tracks : [],
+  };
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(saved));
+  } catch (err) {
+    console.warn('Không thể cập nhật bản sao trong trình duyệt:', err);
+  }
+  return saved;
 }
 
 export async function getEditorSession() {
