@@ -21,6 +21,20 @@ export default function InteractiveCake() {
   const [isMicListening, setIsMicListening] = useState(false);
   const micStreamRef = useRef(null);
   const audioContextRef = useRef(null);
+  const resumeTimerRef = useRef(null);
+
+  const pauseMusicForCandleBlow = () => {
+    if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
+    window.dispatchEvent(new CustomEvent('app:pause-music'));
+  };
+
+  const resumeMusicAfterCandleBlow = (delay = 0) => {
+    if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
+    resumeTimerRef.current = window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('app:resume-music'));
+      resumeTimerRef.current = null;
+    }, delay);
+  };
 
   const stopMic = () => {
     if (micStreamRef.current) {
@@ -32,12 +46,11 @@ export default function InteractiveCake() {
       audioContextRef.current = null;
     }
     setIsMicListening(false);
-    // Tự động tiếp tục phát lại nhạc khi tắt micro hoặc sau khi thổi nến xong
-    window.dispatchEvent(new CustomEvent('app:resume-music'));
   };
 
   const extinguishCandle = (index) => {
     if (!candles[index]) return;
+    if (candles.filter(Boolean).length === 1) pauseMusicForCandleBlow();
     soundEngine.playCandlePuff();
     setCandles(prev => {
       const next = [...prev];
@@ -47,6 +60,7 @@ export default function InteractiveCake() {
   };
 
   const blowAllCandles = () => {
+    pauseMusicForCandleBlow();
     soundEngine.playCandlePuff();
     setCandles([false, false, false, false, false]);
   };
@@ -67,12 +81,14 @@ export default function InteractiveCake() {
       blastConfetti();
       blastStars();
       stopMic();
+      resumeMusicAfterCandleBlow(800);
     }
   }, [candles, isAllBlown]);
 
   // Cleanup microphone when component unmounts
   useEffect(() => {
     return () => {
+      if (resumeTimerRef.current) window.clearTimeout(resumeTimerRef.current);
       stopMic();
     };
   }, []);
@@ -81,6 +97,7 @@ export default function InteractiveCake() {
   const toggleMic = async () => {
     if (isMicListening) {
       stopMic();
+      resumeMusicAfterCandleBlow();
       return;
     }
 
@@ -90,7 +107,7 @@ export default function InteractiveCake() {
     }
 
     // Tự động tạm dừng nhạc nền khi bắt đầu lắng nghe tiếng thổi
-    window.dispatchEvent(new CustomEvent('app:pause-music'));
+    pauseMusicForCandleBlow();
 
     try {
       // Yêu cầu luồng âm thanh gốc (tắt lọc nhiễu tự động để bắt trọn xung áp suất gió thổi vào màng mic)
@@ -167,6 +184,7 @@ export default function InteractiveCake() {
       console.warn('Microphone permission not granted or unsupported:', err);
       alert('Không thể kích hoạt micro (em có thể nhấn nút "Thổi Tắt Nến" bên dưới thay thế nhé!)');
       stopMic();
+      resumeMusicAfterCandleBlow();
     }
   };
 
