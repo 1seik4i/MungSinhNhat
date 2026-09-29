@@ -21,6 +21,7 @@ export default function MusicPlayer({ customTracks = [] }) {
   const audioRef = useRef(null);
   const youtubeFrameRef = useRef(null);
   const lastScrollY = useRef(0);
+  const resumeInProgressRef = useRef(false);
 
   const tracks = customTracks;
   const currentTrack = tracks[currentTrackIndex];
@@ -59,7 +60,8 @@ export default function MusicPlayer({ customTracks = [] }) {
   // Pause music when mic is turned on, resume music when mic is turned off / candles blown
   useEffect(() => {
     const handlePauseMusic = () => {
-      if (isPlaying) {
+      const audioIsPlaying = Boolean(audioRef.current && !audioRef.current.paused && audioRef.current.currentTime > 0);
+      if (isPlaying || audioIsPlaying || youtubeTrack) {
         wasPlayingBeforeMic.current = true;
         if (youtubeTrack) youtubeCommand('pauseVideo');
         else audioRef.current?.pause();
@@ -69,12 +71,28 @@ export default function MusicPlayer({ customTracks = [] }) {
     };
 
     const handleResumeMusic = () => {
-      if (wasPlayingBeforeMic.current) {
+      if (wasPlayingBeforeMic.current && !resumeInProgressRef.current) {
         wasPlayingBeforeMic.current = false;
+        resumeInProgressRef.current = true;
         if (youtubeTrack) {
           youtubeCommand('playVideo');
+          setIsPlaying(true);
+          resumeInProgressRef.current = false;
         } else if (audioRef.current?.src) {
-          audioRef.current.play().then(() => setIsPlaying(true)).catch(() => {});
+          const audio = audioRef.current;
+          audio.muted = isMuted;
+          audio.volume = isMuted ? 0 : volume;
+          audio.play()
+            .then(() => setIsPlaying(true))
+            .catch((error) => {
+              console.warn('Could not resume music after candle blow:', error);
+              setIsPlaying(false);
+            })
+            .finally(() => {
+              resumeInProgressRef.current = false;
+            });
+        } else {
+          resumeInProgressRef.current = false;
         }
       }
     };
@@ -85,7 +103,7 @@ export default function MusicPlayer({ customTracks = [] }) {
       window.removeEventListener('app:pause-music', handlePauseMusic);
       window.removeEventListener('app:resume-music', handleResumeMusic);
     };
-  }, [isPlaying, youtubeTrack]);
+  }, [isPlaying, isMuted, volume, youtubeTrack]);
 
   // Autoplay music when user opens envelope successfully
   useEffect(() => {
@@ -240,7 +258,7 @@ export default function MusicPlayer({ customTracks = [] }) {
 
   return (
     <div className="music-player-wrapper" style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 900 }}>
-      <audio ref={audioRef} preload="auto" onLoadedMetadata={(event) => setPlayback({ current: 0, duration: event.currentTarget.duration })} onTimeUpdate={(event) => setPlayback({ current: event.currentTarget.currentTime, duration: event.currentTarget.duration })} onEnded={() => nextTrack(true)} onPause={() => setIsPlaying(false)} />
+      <audio ref={audioRef} preload="auto" playsInline onLoadedMetadata={(event) => setPlayback({ current: 0, duration: event.currentTarget.duration })} onTimeUpdate={(event) => setPlayback({ current: event.currentTarget.currentTime, duration: event.currentTarget.duration })} onEnded={() => nextTrack(true)} onPause={() => setIsPlaying(false)} />
       {youtubeTrack && <iframe ref={youtubeFrameRef} title="Trình phát nhạc YouTube" onLoad={() => { youtubeCommand('addEventListener', ['onStateChange']); youtubeCommand('setVolume', [isMuted ? 0 : volume * 100]); youtubeCommand('getDuration'); youtubeCommand('playVideo'); }} src={`https://www.youtube.com/embed/${youtubeTrack.source}?autoplay=1&controls=0&rel=0&playsinline=1&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`} allow="autoplay; encrypted-media" style={{ position: 'fixed', width: '1px', height: '1px', opacity: 0, pointerEvents: 'none', left: '-10px', bottom: '-10px' }} />}
 
       <AnimatePresence mode="wait">

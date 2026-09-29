@@ -14,7 +14,10 @@ export const DEFAULT_CONTENT = {
     fortune: { image: '', title: '', description: '', action: '' },
   },
   memories: [],
-  tracks: [],
+  tracks: [
+    { id: 'default-hieuthuhai-sinh-nhat', name: 'HIEUTHUHAI - SINH NHẬT', type: 'url', source: '/audio/hieuthuhai-sinh-nhat.mp3' },
+    { id: 'default-phan-dinh-tung-khuc-hat-mung-sinh-nhat', name: 'KHÚC HÁT MỪNG SINH NHẬT - PHAN ĐINH TÙNG', type: 'url', source: '/audio/phan-dinh-tung-khuc-hat-mung-sinh-nhat.mp3' },
+  ],
 };
 
 export function loadContentSettings() {
@@ -48,7 +51,7 @@ export async function fetchServerContentSettings() {
         surpriseCards: { ...DEFAULT_CONTENT.surpriseCards, ...serverData.surpriseCards },
         cardData: { ...DEFAULT_CONTENT.cardData, ...serverData.cardData },
         memories: Array.isArray(serverData.memories) ? serverData.memories : DEFAULT_CONTENT.memories,
-        tracks: Array.isArray(serverData.tracks) ? serverData.tracks : [],
+      tracks: Array.isArray(serverData.tracks) && serverData.tracks.length ? serverData.tracks : DEFAULT_CONTENT.tracks,
       };
       // Keep local storage up to date with server data
       try {
@@ -148,7 +151,7 @@ export async function saveContentSettings(settings) {
     surpriseCards: { ...DEFAULT_CONTENT.surpriseCards, ...payload.data.surpriseCards },
     cardData: { ...DEFAULT_CONTENT.cardData, ...payload.data.cardData },
     memories: Array.isArray(payload.data.memories) ? payload.data.memories : [],
-    tracks: Array.isArray(payload.data.tracks) ? payload.data.tracks : [],
+    tracks: Array.isArray(payload.data.tracks) && payload.data.tracks.length ? payload.data.tracks : DEFAULT_CONTENT.tracks,
   };
   try {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(saved));

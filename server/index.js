@@ -27,7 +27,10 @@ const EMPTY_CONTENT = {
     fortune: { image: '', title: '', description: '', action: '' },
   },
   memories: [],
-  tracks: [],
+  tracks: [
+    { id: 'default-hieuthuhai-sinh-nhat', name: 'HIEUTHUHAI - SINH NHẬT', type: 'url', source: '/audio/hieuthuhai-sinh-nhat.mp3' },
+    { id: 'default-phan-dinh-tung-khuc-hat-mung-sinh-nhat', name: 'KHÚC HÁT MỪNG SINH NHẬT - PHAN ĐINH TÙNG', type: 'url', source: '/audio/phan-dinh-tung-khuc-hat-mung-sinh-nhat.mp3' },
+  ],
 };
 
 app.disable('x-powered-by');
@@ -175,12 +178,12 @@ async function readContent(db) {
       image: item.image || '',
       rotate: Number(item.rotate) || 0,
     })),
-    tracks: tracksResult.rows.map((item) => ({
+    tracks: tracksResult.rows.length ? tracksResult.rows.map((item) => ({
       id: item.id,
       name: item.name,
       type: item.type,
       source: item.source,
-    })),
+    })) : EMPTY_CONTENT.tracks,
   };
 }
 
