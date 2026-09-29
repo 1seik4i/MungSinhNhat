@@ -12,6 +12,7 @@ const PORT = process.env.PORT || 3001;
 const SESSION_NAME = 'birthday_editor';
 const SESSION_LIFETIME = 7 * 24 * 60 * 60 * 1000;
 const MAX_AUDIO_BYTES = 15 * 1024 * 1024;
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const MEDIA_CHUNK_BYTES = 1024 * 1024;
 const sessionSecret = process.env.EDITOR_SESSION_SECRET || '';
 const DEFAULT_ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'ADMIN';
@@ -141,6 +142,7 @@ async function readContent(db) {
     VALUES ('gift', 1), ('fortune', 2)
     ON CONFLICT (id) DO NOTHING
   `);
+  await migrateInlineImages(db);
   const [profileResult, surpriseResult, memoriesResult, tracksResult] = await Promise.all([
     db.query('SELECT name, birth_date, title, message FROM birthday_profile WHERE id = 1'),
     db.query('SELECT id, image, title, description, action FROM birthday_surprise_cards ORDER BY sort_order, id'),
@@ -180,6 +182,44 @@ async function readContent(db) {
       source: item.source,
     })),
   };
+}
+
+function parseInlineMedia(dataUrl, allowedTypes, maxBytes) {
+  const match = typeof dataUrl === 'string' && dataUrl.match(/^data:([\w.+-]+\/[\w.+-]+);base64,([a-zA-Z0-9+/=]+)$/);
+  if (!match || !allowedTypes.test(match[1])) return null;
+  const buffer = Buffer.from(match[2], 'base64');
+  if (!buffer.length || buffer.length > maxBytes) return null;
+  return { mimeType: match[1], buffer };
+}
+
+async function persistImageDataUrl(client, image) {
+  const inlineImage = parseInlineMedia(image, /^image\/(jpeg|png|webp|gif)$/i, MAX_IMAGE_BYTES);
+  if (!inlineImage) return image || '';
+  const id = randomUUID();
+  await client.query('INSERT INTO birthday_media (id, mime_type, data) VALUES ($1, $2, $3)', [id, inlineImage.mimeType, inlineImage.buffer]);
+  return `/api/content-media/${id}`;
+}
+
+async function migrateInlineImages(db) {
+  const { rows } = await db.query("SELECT id, image FROM birthday_memories WHERE image LIKE 'data:image/%'");
+  if (!rows.length) return;
+
+  const client = await db.connect();
+  await client.query('BEGIN');
+  try {
+    for (const memory of rows) {
+      const image = await persistImageDataUrl(client, memory.image);
+      if (image !== memory.image) {
+        await client.query('UPDATE birthday_memories SET image = $2, updated_at = now() WHERE id = $1', [memory.id, image]);
+      }
+    }
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 async function saveContent(db, data) {
@@ -228,6 +268,7 @@ async function saveContent(db, data) {
 
     const memoryIds = content.memories.map((item) => item.id);
     for (const [index, memory] of content.memories.entries()) {
+      const image = await persistImageDataUrl(client, memory.image);
       await client.query(
         `INSERT INTO birthday_memories (id, title, memory_date, caption, image, rotate, sort_order, updated_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7, now())
@@ -239,7 +280,7 @@ async function saveContent(db, data) {
            rotate = EXCLUDED.rotate,
            sort_order = EXCLUDED.sort_order,
            updated_at = now()`,
-        [memory.id, memory.title || '', memory.date || '', memory.caption || '', memory.image || '', Number(memory.rotate) || 0, index + 1]
+        [memory.id, memory.title || '', memory.date || '', memory.caption || '', image, Number(memory.rotate) || 0, index + 1]
       );
     }
     if (memoryIds.length) {
@@ -329,13 +370,14 @@ app.post('/api/content-settings', requireEditor, route(async (req, res) => {
 }));
 
 app.post('/api/content-media', requireEditor, route(async (req, res) => {
-  const match = typeof req.body?.dataUrl === 'string' && req.body.dataUrl.match(/^data:(audio\/[\w.+-]+);base64,([a-zA-Z0-9+/=]+)$/);
-  if (!match) return res.status(400).json({ success: false, message: 'Tệp âm thanh không hợp lệ.' });
-  const buffer = Buffer.from(match[2], 'base64');
-  if (!buffer.length || buffer.length > MAX_AUDIO_BYTES) return res.status(413).json({ success: false, message: 'Tệp nhạc phải nhỏ hơn 15 MB.' });
+  const media = parseInlineMedia(req.body?.dataUrl, /^(audio\/[\w.+-]+|image\/(jpeg|png|webp|gif))$/i, MAX_AUDIO_BYTES);
+  if (!media) return res.status(400).json({ success: false, message: 'Tệp tải lên không hợp lệ.' });
+  if (media.mimeType.startsWith('image/') && media.buffer.length > MAX_IMAGE_BYTES) {
+    return res.status(413).json({ success: false, message: 'Ảnh phải nhỏ hơn 5 MB.' });
+  }
   const id = randomUUID();
   const db = await ensureDatabase();
-  await db.query('INSERT INTO birthday_media (id, mime_type, data) VALUES ($1, $2, $3)', [id, match[1], buffer]);
+  await db.query('INSERT INTO birthday_media (id, mime_type, data) VALUES ($1, $2, $3)', [id, media.mimeType, media.buffer]);
   res.status(201).json({ success: true, data: { source: `/api/content-media/${id}` } });
 }));
 

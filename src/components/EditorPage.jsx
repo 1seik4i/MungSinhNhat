@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, GripVertical, ImagePlus, Link, Music2, Plus, Save, Trash2, Upload, CheckCircle2, AlertCircle, Info, X, Loader2, LockKeyhole, LogOut } from 'lucide-react';
-import { getYouTubeVideoId, loadContentSettings, fetchServerContentSettings, saveAudioFile, saveContentSettings, compressImageFile, deleteAudioFile, getEditorSession, loginEditor, logoutEditor } from '../utils/contentSettings';
+import { getYouTubeVideoId, loadContentSettings, fetchServerContentSettings, saveAudioFile, saveContentSettings, saveImageFile, deleteAudioFile, getEditorSession, loginEditor, logoutEditor } from '../utils/contentSettings';
 
 const fieldStyle = { width: '100%', marginTop: '6px', boxSizing: 'border-box', border: '1px solid #ead6d2', borderRadius: '10px', padding: '11px 12px', font: 'inherit', fontWeight: 400, background: '#fffdfb' };
 
@@ -126,9 +126,9 @@ export default function EditorPage({ onExit, onSaved }) {
     showNotification('info', 'Đang nén và tối ưu hóa hình ảnh...', 2000);
 
     try {
-      const compressedDataUrl = await compressImageFile(file);
+      const imageSource = await saveImageFile(file);
       const updatedMemories = settings.memories.map((memory) =>
-        memory.id === selectedMemory.id ? { ...memory, image: compressedDataUrl } : memory
+        memory.id === selectedMemory.id ? { ...memory, image: imageSource } : memory
       );
       const updatedSettings = { ...settings, memories: updatedMemories };
       setSettings(updatedSettings);

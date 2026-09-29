@@ -111,6 +111,9 @@ export default function PhotoGallery({ memories }) {
                 <img
                   src={item.image}
                   alt={item.title}
+                  loading={index === 0 ? 'eager' : 'lazy'}
+                  decoding="async"
+                  fetchPriority={index === 0 ? 'high' : 'low'}
                   style={{
                     width: '100%',
                     height: '100%',
@@ -211,6 +214,7 @@ export default function PhotoGallery({ memories }) {
                 <img
                   src={selectedPhoto.image}
                   alt={selectedPhoto.title}
+                  decoding="async"
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
               </div>

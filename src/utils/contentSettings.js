@@ -210,12 +210,21 @@ export async function saveAudioFile(file) {
     reader.readAsDataURL(file);
   });
 
+  return uploadContentMedia(dataUrl);
+}
+
+export async function saveImageFile(file) {
+  const dataUrl = await compressImageFile(file);
+  return uploadContentMedia(dataUrl);
+}
+
+async function uploadContentMedia(dataUrl) {
   const response = await fetch('/api/content-media', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ dataUrl, fileName: file.name, mimeType: file.type }),
+    body: JSON.stringify({ dataUrl }),
   });
-  if (!response.ok) throw new Error(await readApiError(response, 'Máy chủ không thể lưu tệp âm thanh.'));
+  if (!response.ok) throw new Error(await readApiError(response, 'Máy chủ không thể lưu tệp.'));
   const json = await response.json();
   return json.data.source;
 }

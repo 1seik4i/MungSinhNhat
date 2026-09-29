@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, lazy, useState, useEffect } from 'react';
 import CanvasEffects from './components/CanvasEffects';
 import BirthdayDecorations from './components/BirthdayDecorations';
 import FallingTreats from './components/FallingTreats';
@@ -10,10 +10,11 @@ import PhotoGallery from './components/PhotoGallery';
 import GiftBoxModal from './components/GiftBoxModal';
 import MiniGamesModal from './components/MiniGamesModal';
 import MusicPlayer from './components/MusicPlayer';
-import EditorPage from './components/EditorPage';
 import { launchSideCannons } from './utils/confettiHelper';
 import { getAudioFileUrl, loadContentSettings, fetchServerContentSettings } from './utils/contentSettings';
 import { Heart, Sparkles } from 'lucide-react';
+
+const EditorPage = lazy(() => import('./components/EditorPage'));
 
 export default function App() {
   const [envelopeOpened, setEnvelopeOpened] = useState(false);
@@ -115,14 +116,18 @@ export default function App() {
   }, [contentSettings]);
 
   if (isEditorPage) {
-    return <EditorPage
-      onSaved={(savedSettings) => setContentSettings(savedSettings || loadContentSettings())}
-      onExit={() => {
-        const url = new URL(window.location.href);
-        url.searchParams.delete('edit');
-        window.location.assign(url.toString());
-      }}
-    />;
+    return (
+      <Suspense fallback={<main style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>Đang mở trang chỉnh sửa...</main>}>
+        <EditorPage
+          onSaved={(savedSettings) => setContentSettings(savedSettings || loadContentSettings())}
+          onExit={() => {
+            const url = new URL(window.location.href);
+            url.searchParams.delete('edit');
+            window.location.assign(url.toString());
+          }}
+        />
+      </Suspense>
+    );
   }
 
   const handleOpenEnvelope = () => {
