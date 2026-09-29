@@ -119,7 +119,7 @@ export default function MusicPlayer({ customTracks = [] }) {
       if (data?.event === 'onStateChange') {
         if (data.info === 1) setIsPlaying(true);
         if (data.info === 2) setIsPlaying(false);
-        if (data.info === 0) nextTrack();
+        if (data.info === 0) nextTrack(true);
       }
     };
     window.addEventListener('message', receiveYoutubeStatus);
@@ -205,11 +205,11 @@ export default function MusicPlayer({ customTracks = [] }) {
     } else playTrack(currentTrack);
   };
 
-  const nextTrack = () => {
+  const nextTrack = (autoplay = isPlaying) => {
     if (!tracks.length) return;
     const nextIdx = (currentTrackIndex + 1) % tracks.length;
     setCurrentTrackIndex(nextIdx);
-    if (isPlaying) playTrack(tracks[nextIdx]);
+    if (autoplay) playTrack(tracks[nextIdx]);
   };
 
   const handleSeek = (event) => {
@@ -240,7 +240,7 @@ export default function MusicPlayer({ customTracks = [] }) {
 
   return (
     <div className="music-player-wrapper" style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 900 }}>
-      <audio ref={audioRef} preload="auto" onLoadedMetadata={(event) => setPlayback({ current: 0, duration: event.currentTarget.duration })} onTimeUpdate={(event) => setPlayback({ current: event.currentTarget.currentTime, duration: event.currentTarget.duration })} onEnded={nextTrack} onPause={() => setIsPlaying(false)} />
+      <audio ref={audioRef} preload="auto" onLoadedMetadata={(event) => setPlayback({ current: 0, duration: event.currentTarget.duration })} onTimeUpdate={(event) => setPlayback({ current: event.currentTarget.currentTime, duration: event.currentTarget.duration })} onEnded={() => nextTrack(true)} onPause={() => setIsPlaying(false)} />
       {youtubeTrack && <iframe ref={youtubeFrameRef} title="Trình phát nhạc YouTube" onLoad={() => { youtubeCommand('addEventListener', ['onStateChange']); youtubeCommand('setVolume', [isMuted ? 0 : volume * 100]); youtubeCommand('getDuration'); youtubeCommand('playVideo'); }} src={`https://www.youtube.com/embed/${youtubeTrack.source}?autoplay=1&controls=0&rel=0&playsinline=1&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`} allow="autoplay; encrypted-media" style={{ position: 'fixed', width: '1px', height: '1px', opacity: 0, pointerEvents: 'none', left: '-10px', bottom: '-10px' }} />}
 
       <AnimatePresence mode="wait">
