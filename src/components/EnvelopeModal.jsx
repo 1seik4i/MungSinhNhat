@@ -4,7 +4,7 @@ import { soundEngine } from '../utils/audioSynth';
 import { blastConfetti, blastHearts, blastStars } from '../utils/confettiHelper';
 import { Sparkles, Cake, ChevronRight, PartyPopper, Heart } from 'lucide-react';
 
-export default function EnvelopeModal({ recipientName = 'Minh Anh', onOpen }) {
+export default function EnvelopeModal({ recipientName = '', letterMessage = '', onOpen }) {
   // 'closed' -> 'opened' -> 'transitioning'
   const [isOpen, setIsOpen] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -358,7 +358,7 @@ export default function EnvelopeModal({ recipientName = 'Minh Anh', onOpen }) {
                 }}
               >
                 <span style={{ display: 'block', fontSize: 'clamp(1.7rem, 4.4vw, 2.5rem)', lineHeight: 1.15 }}>Thương gửi</span>
-                <span style={{ display: 'block', fontSize: 'clamp(2.1rem, 5.5vw, 3.2rem)', lineHeight: 1.1, marginTop: '1px' }}>{recipientName}</span>
+                <span style={{ display: 'block', fontSize: 'clamp(2.1rem, 5.5vw, 3.2rem)', lineHeight: 1.1, marginTop: '1px' }}>{recipientName || 'Người nhận'}</span>
               </h2>
 
               <div
@@ -381,10 +381,10 @@ export default function EnvelopeModal({ recipientName = 'Minh Anh', onOpen }) {
                 margin: '0 auto 16px',
                 maxWidth: '420px',
                 textAlign: 'center',
+                whiteSpace: 'pre-line',
               }}
             >
-              Chúc em một ngày sinh nhật ngập tràn <strong>tiếng cười</strong>, <strong>sự ấm áp</strong> và những điều kỳ diệu nhất! ✨<br />
-              Mong rằng ở tuổi mới, mọi ước nguyện của em đều sẽ đơm hoa kết trái, em luôn được bao bọc bởi tình yêu thương và giữ mãi nụ cười rạng rỡ trên môi. 🌸💖
+              {letterMessage || 'Chưa có lời chúc. Hãy thêm nội dung trong trang chỉnh sửa.'}
             </p>
 
             {/* Enter Celebration Button */}

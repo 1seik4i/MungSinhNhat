@@ -4,21 +4,16 @@ const AUDIO_STORE = 'tracks';
 
 export const DEFAULT_CONTENT = {
   cardData: {
-    name: 'Minh Anh',
-    birthDate: '05 / 10',
-    title: 'Chúc Mừng Sinh Nhật',
-    message: 'Chúc em một ngày sinh nhật thật rực rỡ, ấm áp và đong đầy nụ cười!\nƯớc mong tuổi mới của em sẽ mở ra ngàn vạn điều may mắn, vạn sự hanh thông và luôn xinh đẹp rạng ngời như ánh ban mai. 💖🌸',
+    name: '',
+    birthDate: '',
+    title: '',
+    message: '',
   },
   surpriseCards: {
-    gift: { image: '', title: 'Hộp quà bí mật', description: 'Một món quà nhỏ đang chờ em mở ra.', action: 'Mở hộp quà' },
-    fortune: { image: '', title: 'Gieo thẻ sinh nhật', description: 'Khám phá một lời nhắn may mắn cho tuổi mới.', action: 'Gieo thẻ ngay' },
+    gift: { image: '', title: '', description: '', action: '' },
+    fortune: { image: '', title: '', description: '', action: '' },
   },
-  memories: [
-    { id: 'memory-1', title: 'Nụ Cười Tỏa Nắng', date: 'Mùa hè rực rỡ', caption: 'Chúc em luôn giữ trọn nụ cười hồn nhiên và rạng ngời này trên môi!', image: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=600&auto=format&fit=crop&q=80', rotate: -3 },
-    { id: 'memory-2', title: 'Những Chuyến Đi Xa', date: 'Thanh xuân phiêu lưu', caption: 'Mong em sẽ đi đến bất cứ nơi đâu em muốn và khám phá muôn điều kỳ diệu.', image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80', rotate: 2 },
-    { id: 'memory-3', title: 'Khoảnh Khắc Bình Yên', date: 'Những ngày thảnh thơi', caption: 'Mỗi ngày trôi qua đều là một món quà đáng trân trọng và ngập tràn niềm vui.', image: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=600&auto=format&fit=crop&q=80', rotate: -2 },
-    { id: 'memory-4', title: 'Rạng Rỡ Đón Tuổi Mới', date: 'Sinh nhật ý nghĩa', caption: 'Tuổi mới mở ra những trang sách tuyệt vời nhất trong cuộc đời em!', image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600&auto=format&fit=crop&q=80', rotate: 3 },
-  ],
+  memories: [],
   tracks: [],
 };
 
@@ -69,6 +64,18 @@ export async function fetchServerContentSettings() {
   return null;
 }
 
+export async function fetchServerTracks() {
+  try {
+    const response = await fetch('/api/tracks', { cache: 'no-store' });
+    if (!response.ok) return null;
+    const payload = await response.json();
+    return payload.success && Array.isArray(payload.data) ? payload.data : null;
+  } catch (error) {
+    console.warn('Could not load the fast track list:', error);
+    return null;
+  }
+}
+
 export function compressImageFile(file, maxWidth = 1200, maxHeight = 1200, quality = 0.82) {
   return new Promise((resolve, reject) => {
     if (!file || !file.type.startsWith('image/')) {
@@ -115,27 +122,51 @@ export function compressImageFile(file, maxWidth = 1200, maxHeight = 1200, quali
   });
 }
 
-export function saveContentSettings(settings) {
+async function readApiError(response, fallback) {
   try {
-    const serialized = JSON.stringify(settings);
+    const payload = await response.json();
+    return payload.message || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+export async function saveContentSettings(settings) {
+  const serialized = JSON.stringify(settings);
+  try {
     localStorage.setItem(SETTINGS_KEY, serialized);
   } catch (err) {
-    console.error('Failed to save to localStorage:', err);
-    if (err.name === 'QuotaExceededError' || err.code === 22) {
-      throw new Error('Bộ nhớ trình duyệt bị đầy do ảnh dung lượng quá lớn. Hệ thống đã tự động nén ảnh, vui lòng thử lại hoặc giảm bớt số lượng ảnh.');
-    }
+    console.warn('Không thể cập nhật bản sao trong trình duyệt:', err);
   }
 
-  // Asynchronously sync to backend server so mobile / other devices can load it
-  fetch('/api/content-settings', {
+  const response = await fetch('/api/content-settings', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(settings),
-  }).catch((err) => {
-    console.warn('Could not sync content settings to server API:', err);
+    body: serialized,
   });
+  if (!response.ok) throw new Error(await readApiError(response, 'Không thể lưu thay đổi lên Supabase.'));
+  const payload = await response.json();
+  return payload.data;
+}
 
-  return { success: true };
+export async function getEditorSession() {
+  const response = await fetch('/api/editor-session', { cache: 'no-store' });
+  if (!response.ok) return { authenticated: false, configured: false };
+  return response.json();
+}
+
+export async function loginEditor(password) {
+  const response = await fetch('/api/editor-session', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password }),
+  });
+  if (!response.ok) throw new Error(await readApiError(response, 'Không thể đăng nhập.'));
+  return true;
+}
+
+export async function logoutEditor() {
+  await fetch('/api/editor-session', { method: 'DELETE' });
 }
 
 export function getYouTubeVideoId(value) {
@@ -163,18 +194,25 @@ function openAudioDb() {
 }
 
 export async function saveAudioFile(file) {
-  const db = await openAudioDb();
-  const id = crypto.randomUUID();
-  await new Promise((resolve, reject) => {
-    const request = db.transaction(AUDIO_STORE, 'readwrite').objectStore(AUDIO_STORE).put({ id, file });
-    request.onsuccess = resolve;
-    request.onerror = () => reject(request.error);
+  const dataUrl = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('Không thể đọc tệp âm thanh.'));
+    reader.readAsDataURL(file);
   });
-  db.close();
-  return id;
+
+  const response = await fetch('/api/content-media', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ dataUrl, fileName: file.name, mimeType: file.type }),
+  });
+  if (!response.ok) throw new Error(await readApiError(response, 'Máy chủ không thể lưu tệp âm thanh.'));
+  const json = await response.json();
+  return json.data.source;
 }
 
 export async function getAudioFileUrl(id) {
+  if (typeof id === 'string' && (id.startsWith('/api/content-media/') || id.startsWith('/media/') || /^https?:\/\//.test(id))) return id;
   const db = await openAudioDb();
   const entry = await new Promise((resolve, reject) => {
     const request = db.transaction(AUDIO_STORE, 'readonly').objectStore(AUDIO_STORE).get(id);
@@ -186,6 +224,11 @@ export async function getAudioFileUrl(id) {
 }
 
 export async function deleteAudioFile(id) {
+  if (typeof id === 'string' && (id.startsWith('/api/content-media/') || id.startsWith('/media/'))) {
+    const response = await fetch(`/api/content-media/${encodeURIComponent(id.split('/').pop())}`, { method: 'DELETE' });
+    if (!response.ok) throw new Error(await readApiError(response, 'Không thể xóa tệp âm thanh.'));
+    return;
+  }
   try {
     const db = await openAudioDb();
     await new Promise((resolve, reject) => {

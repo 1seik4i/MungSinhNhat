@@ -170,13 +170,23 @@ export default function InteractiveCake() {
     }
   };
 
-  const handleWishSubmit = (e) => {
+  const handleWishSubmit = async (e) => {
     e.preventDefault();
-    if (!wishMade.trim()) return;
+    const wish = wishMade.trim();
+    if (!wish) return;
     soundEngine.playSparkle();
-    setSubmittedWish(wishMade.trim());
+    setSubmittedWish(wish);
     setWishMade('');
     blastStars();
+    try {
+      await fetch('/api/wishes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wish }),
+      });
+    } catch (error) {
+      console.warn('Could not save birthday wish:', error);
+    }
   };
 
   return (

@@ -20,7 +20,6 @@ export default function MusicPlayer({ customTracks = [] }) {
   const [playback, setPlayback] = useState({ current: 0, duration: 0 });
   const audioRef = useRef(null);
   const youtubeFrameRef = useRef(null);
-  const hasAutoplayedYoutube = useRef(false);
   const lastScrollY = useRef(0);
 
   const tracks = customTracks;
@@ -74,7 +73,6 @@ export default function MusicPlayer({ customTracks = [] }) {
         wasPlayingBeforeMic.current = false;
         if (youtubeTrack) {
           youtubeCommand('playVideo');
-          setIsPlaying(true);
         } else if (audioRef.current?.src) {
           audioRef.current.play().then(() => setIsPlaying(true)).catch(() => {});
         }
@@ -95,11 +93,6 @@ export default function MusicPlayer({ customTracks = [] }) {
       if (tracks.length > 0) {
         const trackToPlay = tracks[currentTrackIndex] || tracks[0];
         playTrack(trackToPlay);
-      } else {
-        // Play gentle default birthday synth chime melody if no custom music track
-        soundEngine.init();
-        soundEngine.playMelody('classic');
-        setIsPlaying(true);
       }
     };
 
@@ -123,10 +116,15 @@ export default function MusicPlayer({ customTracks = [] }) {
       if (data?.event === 'infoDelivery' && data.info) {
         setPlayback((current) => ({ current: Number.isFinite(data.info.currentTime) ? data.info.currentTime : current.current, duration: Number.isFinite(data.info.duration) ? data.info.duration : current.duration }));
       }
+      if (data?.event === 'onStateChange') {
+        if (data.info === 1) setIsPlaying(true);
+        if (data.info === 2) setIsPlaying(false);
+        if (data.info === 0) nextTrack();
+      }
     };
     window.addEventListener('message', receiveYoutubeStatus);
     return () => window.removeEventListener('message', receiveYoutubeStatus);
-  }, []);
+  }, [tracks, currentTrackIndex, volume, isMuted, isPlaying]);
 
   useEffect(() => () => {
     soundEngine.stopMelody();
@@ -140,6 +138,16 @@ export default function MusicPlayer({ customTracks = [] }) {
       setCurrentTrackIndex(0);
     }
   }, [customTracks]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !currentTrack || currentTrack.type === 'youtube' || !currentTrack.source) return;
+    const nextSource = new URL(currentTrack.source, window.location.href).href;
+    if (audio.src !== nextSource) {
+      audio.src = currentTrack.source;
+      audio.load();
+    }
+  }, [currentTrack]);
 
   useEffect(() => {
     if (!youtubeTrack || !isPlaying) return undefined;
@@ -166,12 +174,13 @@ export default function MusicPlayer({ customTracks = [] }) {
     stopCurrent();
     if (track.type === 'youtube') {
       setYoutubeTrack(track);
-      setIsPlaying(true);
+      setIsPlaying(false);
       return;
     }
     if (!track.source) return;
     const audio = audioRef.current;
-    audio.src = track.source;
+    const nextSource = new URL(track.source, window.location.href).href;
+    if (audio.src !== nextSource) audio.src = track.source;
     audio.volume = isMuted ? 0 : volume;
     try {
       await audio.play();
@@ -191,7 +200,6 @@ export default function MusicPlayer({ customTracks = [] }) {
     }
     if (currentTrack.type === 'youtube' && youtubeTrack?.id === currentTrack.id) {
       youtubeCommand('playVideo');
-      setIsPlaying(true);
     } else if (currentTrack.type !== 'youtube' && audioRef.current?.src) {
       audioRef.current.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
     } else playTrack(currentTrack);
@@ -216,7 +224,8 @@ export default function MusicPlayer({ customTracks = [] }) {
     setVolume(value);
     soundEngine.setVolume(value);
     if (audioRef.current) audioRef.current.volume = value;
-    if (value > 0) setIsMuted(false);
+    if (youtubeTrack) youtubeCommand('setVolume', [value * 100]);
+    setIsMuted(value === 0);
   };
 
   const toggleMute = () => {
@@ -231,8 +240,8 @@ export default function MusicPlayer({ customTracks = [] }) {
 
   return (
     <div className="music-player-wrapper" style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 900 }}>
-      <audio ref={audioRef} onLoadedMetadata={(event) => setPlayback({ current: 0, duration: event.currentTarget.duration })} onTimeUpdate={(event) => setPlayback({ current: event.currentTarget.currentTime, duration: event.currentTarget.duration })} onEnded={nextTrack} onPause={() => setIsPlaying(false)} />
-      {youtubeTrack && <iframe ref={youtubeFrameRef} title="Trình phát nhạc YouTube" onLoad={() => { youtubeCommand('addEventListener', ['onStateChange']); youtubeCommand('getDuration'); }} src={`https://www.youtube.com/embed/${youtubeTrack.source}?autoplay=1&controls=0&rel=0&playsinline=1&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`} allow="autoplay; encrypted-media" style={{ position: 'fixed', width: '1px', height: '1px', opacity: 0, pointerEvents: 'none', left: '-10px', bottom: '-10px' }} />}
+      <audio ref={audioRef} preload="auto" onLoadedMetadata={(event) => setPlayback({ current: 0, duration: event.currentTarget.duration })} onTimeUpdate={(event) => setPlayback({ current: event.currentTarget.currentTime, duration: event.currentTarget.duration })} onEnded={nextTrack} onPause={() => setIsPlaying(false)} />
+      {youtubeTrack && <iframe ref={youtubeFrameRef} title="Trình phát nhạc YouTube" onLoad={() => { youtubeCommand('addEventListener', ['onStateChange']); youtubeCommand('setVolume', [isMuted ? 0 : volume * 100]); youtubeCommand('getDuration'); youtubeCommand('playVideo'); }} src={`https://www.youtube.com/embed/${youtubeTrack.source}?autoplay=1&controls=0&rel=0&playsinline=1&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`} allow="autoplay; encrypted-media" style={{ position: 'fixed', width: '1px', height: '1px', opacity: 0, pointerEvents: 'none', left: '-10px', bottom: '-10px' }} />}
 
       <AnimatePresence mode="wait">
         {!isHidden ? (

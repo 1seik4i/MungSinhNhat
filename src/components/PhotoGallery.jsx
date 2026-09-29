@@ -1,70 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, ImagePlus, X, Sparkles, Heart, Images } from 'lucide-react';
+import { Camera, X, Images } from 'lucide-react';
 import { soundEngine } from '../utils/audioSynth';
 
-const DEFAULT_MEMORIES = [
-  {
-    id: 1,
-    title: 'Nụ Cười Tỏa Nắng',
-    date: 'Mùa hè rực rỡ',
-    caption: 'Chúc em luôn giữ trọn nụ cười hồn nhiên và rạng ngời này trên môi!',
-    image: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=600&auto=format&fit=crop&q=80',
-    rotate: -3
-  },
-  {
-    id: 2,
-    title: 'Những Chuyến Đi Xa',
-    date: 'Thanh xuân phiêu lưu',
-    caption: 'Mong em sẽ đi đến bất cứ nơi đâu em muốn và khám phá muôn điều kỳ diệu.',
-    image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80',
-    rotate: 2
-  },
-  {
-    id: 3,
-    title: 'Khoảnh Khắc Bình Yên',
-    date: 'Những ngày thảnh thơi',
-    caption: 'Mỗi ngày trôi qua đều là một món quà đáng trân trọng và ngập tràn niềm vui.',
-    image: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=600&auto=format&fit=crop&q=80',
-    rotate: -2
-  },
-  {
-    id: 4,
-    title: 'Rạng Rỡ Đón Tuổi Mới',
-    date: 'Sinh nhật ý nghĩa',
-    caption: 'Tuổi mới mở ra những trang sách tuyệt vời nhất trong cuộc đời em!',
-    image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600&auto=format&fit=crop&q=80',
-    rotate: 3
-  }
-];
-
 export default function PhotoGallery({ memories }) {
-  const [photos, setPhotos] = useState(memories?.length ? memories : DEFAULT_MEMORIES);
+  const [photos, setPhotos] = useState(Array.isArray(memories) ? memories : []);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
 
   useEffect(() => {
-    if (memories?.length) setPhotos(memories);
+    setPhotos(Array.isArray(memories) ? memories : []);
   }, [memories]);
-
-  const handleUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    soundEngine.playSparkle();
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const newPhoto = {
-        id: Date.now(),
-        title: 'Kỷ Niệm Mới Thêm',
-        date: 'Hôm nay',
-        caption: 'Một mảnh ghép kỷ niệm đáng nhớ vừa được lưu giữ!',
-        image: event.target.result,
-        rotate: (Math.random() - 0.5) * 6
-      };
-      setPhotos(prev => [newPhoto, ...prev]);
-    };
-    reader.readAsDataURL(file);
-  };
 
   return (
     <div style={{ maxWidth: '950px', margin: '40px auto', padding: '0 16px' }}>
@@ -108,30 +53,27 @@ export default function PhotoGallery({ memories }) {
             </h2>
           </div>
 
-          {/* Add custom photo button */}
-          <label className="btn-secondary" style={{ cursor: 'pointer' }}>
-            <ImagePlus size={16} />
-            <span>Thêm Ảnh Kỷ Niệm</span>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleUpload}
-              style={{ display: 'none' }}
-            />
-          </label>
         </div>
 
         {/* Polaroid Gallery Grid */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '25px',
-            padding: '10px',
-          }}
-        >
-          {photos.map((item) => (
-            <div key={item.id} style={{ transform: `rotate(${item.rotate}deg)` }}>
+        {photos.length === 0 ? (
+          <div style={{ padding: '28px 10px', textAlign: 'center', color: 'var(--text-muted)' }}>
+            Chưa có ảnh kỷ niệm. Hãy thêm ảnh trong trang chỉnh sửa.
+          </div>
+        ) : (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '25px',
+              padding: '10px',
+            }}
+          >
+          {photos.map((item, index) => {
+            const fallbackRotations = [-1.4, 1.1, -0.8, 1.3, -1.1, 0.9];
+            const rotation = Number(item.rotate) || fallbackRotations[index % fallbackRotations.length];
+            return (
+            <div key={item.id} style={{ transform: `rotate(${rotation}deg)` }}>
             <motion.div
               whileHover={{ scale: 1.04 }}
               onClick={() => {
@@ -195,8 +137,10 @@ export default function PhotoGallery({ memories }) {
               </div>
             </motion.div>
             </div>
-          ))}
-        </div>
+          );
+          })}
+          </div>
+        )}
       </motion.div>
 
       {/* Lightbox Modal */}

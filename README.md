@@ -92,6 +92,15 @@ npm run dev
 npm run build
 ```
 
+### Kết nối Supabase và bảo vệ trang chỉnh sửa
+
+1. Sao chép `.env.example` thành `.env`.
+2. Điền `DATABASE_URL`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `EDITOR_SESSION_SECRET` và `SITE_ORIGIN`.
+3. Khi chạy trên Vercel, lấy **Transaction pooler** trong Supabase → Connect (cổng `6543`) vì địa chỉ direct `db.*:5432` dùng IPv6. Thêm `?sslmode=require&uselibpqcompat=true` vào cuối URL.
+4. Khai báo các giá trị trên trong Vercel → Project Settings → Environment Variables rồi triển khai lại.
+
+Backend tự tạo các bảng `birthday_profile`, `birthday_surprise_cards`, `birthday_memories`, `birthday_tracks`, `birthday_media`, `birthday_cards`, `birthday_wishes` và `admin_users` trong lần kết nối đầu tiên. Nội dung, nhạc tải lên, điều ước và tài khoản quản trị được giữ trong PostgreSQL. Trang `?edit=1` đăng nhập bằng tài khoản ADMIN đã được seed vào Supabase.
+
 ---
 
 ## 🛠️ 5. Công Nghệ Sử Dụng (Tech Stack)

@@ -9,9 +9,9 @@ export default function BirthdaySurprises({ onOpenGift, onOpenFortune, cardSetti
     {
       image: cardSettings?.gift?.image || giftBox,
       imageAlt: 'Hộp quà thắt nơ',
-      title: cardSettings?.gift?.title || 'Hộp quà bí mật',
-      description: cardSettings?.gift?.description || 'Một món quà nhỏ đang chờ em mở ra.',
-      action: cardSettings?.gift?.action || 'Mở hộp quà',
+      title: cardSettings?.gift?.title || '',
+      description: cardSettings?.gift?.description || '',
+      action: cardSettings?.gift?.action || '',
       onClick: onOpenGift,
       accent: '#c85e6f',
       background: 'linear-gradient(135deg, #fff2ed, #fbe0df)',
@@ -19,14 +19,17 @@ export default function BirthdaySurprises({ onOpenGift, onOpenFortune, cardSetti
     {
       image: cardSettings?.fortune?.image || fortuneCookie,
       imageAlt: 'Bánh quy may mắn',
-      title: cardSettings?.fortune?.title || 'Gieo thẻ sinh nhật',
-      description: cardSettings?.fortune?.description || 'Khám phá một lời nhắn may mắn cho tuổi mới.',
-      action: cardSettings?.fortune?.action || 'Gieo thẻ ngay',
+      title: cardSettings?.fortune?.title || '',
+      description: cardSettings?.fortune?.description || '',
+      action: cardSettings?.fortune?.action || '',
       onClick: onOpenFortune,
       accent: '#b78940',
       background: 'linear-gradient(135deg, #fff8e8, #f7e9c9)',
     },
   ];
+
+  const visibleOptions = options.filter(({ title, description, action }) => title && description && action);
+  if (!visibleOptions.length) return null;
 
   return (
     <section style={{ maxWidth: '850px', margin: '0 auto 40px', padding: '0 16px' }}>
@@ -42,7 +45,7 @@ export default function BirthdaySurprises({ onOpenGift, onOpenFortune, cardSetti
           <h2 className="mobile-balanced-heading" style={{ marginTop: '4px', fontFamily: 'var(--font-handwriting)', fontSize: 'clamp(2rem, 5vw, 2.7rem)', fontWeight: 700 }}><span>Chọn món quà</span>{' '}<span className="keep-together">dành cho em</span></h2>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '16px' }}>
-          {options.map(({ image, imageAlt, title, description, action, onClick, accent, background }) => (
+          {visibleOptions.map(({ image, imageAlt, title, description, action, onClick, accent, background }) => (
             <motion.button
               key={title}
               type="button"

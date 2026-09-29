@@ -12,13 +12,14 @@ import MiniGamesModal from './components/MiniGamesModal';
 import MusicPlayer from './components/MusicPlayer';
 import EditorPage from './components/EditorPage';
 import { launchSideCannons } from './utils/confettiHelper';
-import { getAudioFileUrl, loadContentSettings, fetchServerContentSettings } from './utils/contentSettings';
+import { getAudioFileUrl, loadContentSettings, fetchServerContentSettings, fetchServerTracks } from './utils/contentSettings';
 import { Heart, Sparkles } from 'lucide-react';
 
 export default function App() {
   const [envelopeOpened, setEnvelopeOpened] = useState(false);
   const [isGiftOpen, setIsGiftOpen] = useState(false);
   const [isFortuneOpen, setIsFortuneOpen] = useState(false);
+  const [contentLoaded, setContentLoaded] = useState(false);
   const [contentSettings, setContentSettings] = useState(loadContentSettings);
   const [customTracks, setCustomTracks] = useState([]);
 
@@ -32,6 +33,12 @@ export default function App() {
       if (serverSettings) {
         setContentSettings(serverSettings);
       }
+    }).finally(() => setContentLoaded(true));
+  }, []);
+
+  useEffect(() => {
+    fetchServerTracks().then((tracks) => {
+      if (tracks) setCustomTracks(tracks);
     });
   }, []);
 
@@ -61,7 +68,15 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    setCardData((current) => ({ ...current, ...contentSettings.cardData }));
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('card')) return;
+    const nameParam = params.get('name');
+    const dateParam = params.get('date');
+    setCardData((current) => ({
+      ...current,
+      ...contentSettings.cardData,
+      ...(nameParam ? { name: nameParam, birthDate: dateParam || contentSettings.cardData.birthDate } : {}),
+    }));
   }, [contentSettings.cardData]);
 
   useEffect(() => {
@@ -117,6 +132,7 @@ export default function App() {
       {!envelopeOpened && (
         <EnvelopeModal
           recipientName={cardData.name}
+          letterMessage={cardData.message}
           onOpen={handleOpenEnvelope}
         />
       )}
@@ -126,8 +142,6 @@ export default function App() {
         {/* Hero Greeting Section */}
         <HeroHeader
           cardData={cardData}
-          onOpenGift={() => setIsGiftOpen(true)}
-          onOpenFortune={() => setIsFortuneOpen(true)}
           onReopenEnvelope={() => setEnvelopeOpened(false)}
           onScrollToCake={() => scrollToSection('cake-section')}
           onOpenEditor={() => {
@@ -140,11 +154,13 @@ export default function App() {
         {/* Interactive 3D Birthday Cake */}
         <InteractiveCake />
 
-        <BirthdaySurprises
-          onOpenGift={() => setIsGiftOpen(true)}
-          onOpenFortune={() => setIsFortuneOpen(true)}
-          cardSettings={contentSettings.surpriseCards}
-        />
+        {contentLoaded && (
+          <BirthdaySurprises
+            onOpenGift={() => setIsGiftOpen(true)}
+            onOpenFortune={() => setIsFortuneOpen(true)}
+            cardSettings={contentSettings.surpriseCards}
+          />
+        )}
 
         {/* Polaroid Memory Photo Gallery */}
         <PhotoGallery memories={contentSettings.memories} />
@@ -174,14 +190,12 @@ export default function App() {
       {/* Floating Music Synth Player */}
       <MusicPlayer customTracks={customTracks} />
 
-      {/* Gift Box Reveal Modal */}
       <GiftBoxModal
         isOpen={isGiftOpen}
         onClose={() => setIsGiftOpen(false)}
         recipientName={cardData.name}
       />
 
-      {/* Fortune Cookie & Horoscope Modal */}
       <MiniGamesModal
         isOpen={isFortuneOpen}
         onClose={() => setIsFortuneOpen(false)}

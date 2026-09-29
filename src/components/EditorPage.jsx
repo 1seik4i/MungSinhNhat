@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, GripVertical, ImagePlus, Link, Music2, Plus, Save, Trash2, Upload, CheckCircle2, AlertCircle, Info, X, Loader2 } from 'lucide-react';
-import { getYouTubeVideoId, loadContentSettings, fetchServerContentSettings, saveAudioFile, saveContentSettings, compressImageFile, deleteAudioFile } from '../utils/contentSettings';
+import { ArrowLeft, GripVertical, ImagePlus, Link, Music2, Plus, Save, Trash2, Upload, CheckCircle2, AlertCircle, Info, X, Loader2, LockKeyhole, LogOut } from 'lucide-react';
+import { getYouTubeVideoId, loadContentSettings, fetchServerContentSettings, saveAudioFile, saveContentSettings, compressImageFile, deleteAudioFile, getEditorSession, loginEditor, logoutEditor } from '../utils/contentSettings';
 
 const fieldStyle = { width: '100%', marginTop: '6px', boxSizing: 'border-box', border: '1px solid #ead6d2', borderRadius: '10px', padding: '11px 12px', font: 'inherit', fontWeight: 400, background: '#fffdfb' };
 
@@ -11,18 +11,29 @@ export default function EditorPage({ onExit, onSaved }) {
   const [notification, setNotification] = useState(null); // { type: 'success' | 'error' | 'info', text: string }
   const [isProcessingImage, setIsProcessingImage] = useState(false);
   const [draggedTrackId, setDraggedTrackId] = useState(null);
+  const [sessionState, setSessionState] = useState('loading');
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const musicFileRef = useRef(null);
   const imageFileRef = useRef(null);
   const selectedMemory = settings.memories.find((memory) => memory.id === selectedMemoryId) || settings.memories[0];
 
   useEffect(() => {
-    fetchServerContentSettings().then((serverSettings) => {
-      if (serverSettings) {
-        setSettings(serverSettings);
-        if (!selectedMemoryId && serverSettings.memories?.[0]?.id) {
-          setSelectedMemoryId(serverSettings.memories[0].id);
+    getEditorSession().then((session) => {
+      if (!session.configured) return setSessionState('unconfigured');
+      if (!session.authenticated) return setSessionState('locked');
+      setSessionState('authenticated');
+      fetchServerContentSettings().then((serverSettings) => {
+        if (serverSettings) {
+          setSettings(serverSettings);
+          if (!serverSettings.memories?.some((item) => item.id === selectedMemoryId)) {
+            setSelectedMemoryId(serverSettings.memories?.[0]?.id);
+          }
         }
-      }
+      });
+    }).catch(() => {
+      setSessionState('locked');
     });
   }, []);
 
@@ -35,18 +46,31 @@ export default function EditorPage({ onExit, onSaved }) {
     }
   };
 
-  const save = () => {
+  const save = async () => {
+    setIsSaving(true);
     try {
-      saveContentSettings(settings);
+      await saveContentSettings(settings);
       showNotification('success', 'Đã lưu tất cả thay đổi thành công!');
       onSaved?.();
     } catch (err) {
       console.error(err);
       showNotification('error', err.message || 'Không thể lưu dữ liệu. Vui lòng kiểm tra lại dung lượng ảnh!');
+    } finally {
+      setIsSaving(false);
     }
   };
 
   const updateCardData = (key, value) => setSettings((current) => ({ ...current, cardData: { ...current.cardData, [key]: value } }));
+  const updateSurpriseCard = (cardKey, field, value) => setSettings((current) => ({
+    ...current,
+    surpriseCards: {
+      ...current.surpriseCards,
+      [cardKey]: {
+        ...(current.surpriseCards?.[cardKey] || {}),
+        [field]: value,
+      },
+    },
+  }));
   const updateMemory = (key, value) => setSettings((current) => ({ ...current, memories: current.memories.map((memory) => memory.id === selectedMemory.id ? { ...memory, [key]: value } : memory) }));
 
   const addMemory = () => {
@@ -58,14 +82,14 @@ export default function EditorPage({ onExit, onSaved }) {
     showNotification('info', 'Đã thêm một ảnh kỷ niệm mới. Hãy chọn ảnh và điền thông điệp nhé!');
   };
 
-  const removeMemory = () => {
+  const removeMemory = async () => {
     if (settings.memories.length <= 1) return showNotification('error', 'Cần giữ lại ít nhất một ảnh kỷ niệm trong album.');
     const remaining = settings.memories.filter((memory) => memory.id !== selectedMemory.id);
     const updatedSettings = { ...settings, memories: remaining };
     setSettings(updatedSettings);
     setSelectedMemoryId(remaining[0].id);
     try {
-      saveContentSettings(updatedSettings);
+      await saveContentSettings(updatedSettings);
       showNotification('info', 'Đã xóa kỷ niệm và giải phóng bộ nhớ lưu trữ!');
       onSaved?.();
     } catch (err) {
@@ -73,7 +97,7 @@ export default function EditorPage({ onExit, onSaved }) {
     }
   };
 
-  const clearImage = () => {
+  const clearImage = async () => {
     if (!selectedMemory.image) return;
     const updatedMemories = settings.memories.map((memory) =>
       memory.id === selectedMemory.id ? { ...memory, image: '' } : memory
@@ -81,7 +105,7 @@ export default function EditorPage({ onExit, onSaved }) {
     const updatedSettings = { ...settings, memories: updatedMemories };
     setSettings(updatedSettings);
     try {
-      saveContentSettings(updatedSettings);
+      await saveContentSettings(updatedSettings);
       showNotification('info', 'Đã gỡ ảnh và giải phóng bộ nhớ!');
       onSaved?.();
     } catch (err) {
@@ -108,7 +132,7 @@ export default function EditorPage({ onExit, onSaved }) {
       );
       const updatedSettings = { ...settings, memories: updatedMemories };
       setSettings(updatedSettings);
-      saveContentSettings(updatedSettings);
+      await saveContentSettings(updatedSettings);
       onSaved?.();
       showNotification('success', 'Đã tải, tối ưu và lưu ảnh thành công!');
     } catch (err) {
@@ -120,11 +144,11 @@ export default function EditorPage({ onExit, onSaved }) {
     }
   };
 
-  const addLink = () => {
+  const addLink = async () => {
     const url = musicUrl.trim();
     if (!url) return showNotification('error', 'Vui lòng nhập đường link bài hát hoặc YouTube.');
     const youtubeId = getYouTubeVideoId(url);
-    const addTrack = async () => {
+    try {
       let name = url.split('/').pop()?.split('?')[0] || 'Bài hát từ liên kết';
       if (youtubeId) {
         try {
@@ -138,12 +162,13 @@ export default function EditorPage({ onExit, onSaved }) {
       const updatedTracks = [...settings.tracks, { id: crypto.randomUUID(), name, type: youtubeId ? 'youtube' : 'url', source: youtubeId || url }];
       const updatedSettings = { ...settings, tracks: updatedTracks };
       setSettings(updatedSettings);
-      saveContentSettings(updatedSettings);
+      await saveContentSettings(updatedSettings);
       onSaved?.();
       setMusicUrl('');
       showNotification('success', `Đã thêm bài hát: ${name}`);
-    };
-    addTrack();
+    } catch (error) {
+      showNotification('error', error.message || 'Không thể thêm bài hát.');
+    }
   };
 
   const addAudioFile = async (file) => {
@@ -154,7 +179,7 @@ export default function EditorPage({ onExit, onSaved }) {
       const updatedTracks = [...settings.tracks, { id: crypto.randomUUID(), name, type: 'file', source: fileId }];
       const updatedSettings = { ...settings, tracks: updatedTracks };
       setSettings(updatedSettings);
-      saveContentSettings(updatedSettings);
+      await saveContentSettings(updatedSettings);
       onSaved?.();
       showNotification('success', `Đã tải lên tệp nhạc: ${name}`);
     } catch (err) {
@@ -172,7 +197,7 @@ export default function EditorPage({ onExit, onSaved }) {
     const updatedSettings = { ...settings, tracks: updatedTracks };
     setSettings(updatedSettings);
     try {
-      saveContentSettings(updatedSettings);
+      await saveContentSettings(updatedSettings);
       showNotification('info', 'Đã xóa bài hát và giải phóng bộ nhớ!');
       onSaved?.();
     } catch (err) {
@@ -189,6 +214,52 @@ export default function EditorPage({ onExit, onSaved }) {
     tracks.splice(toIndex, 0, track);
     return { ...current, tracks };
   });
+
+  const handleLogin = async (event) => {
+    event.preventDefault();
+    setLoginError('');
+    try {
+      await loginEditor(password);
+      setPassword('');
+      setSessionState('authenticated');
+      const serverSettings = await fetchServerContentSettings();
+      if (serverSettings) {
+        setSettings(serverSettings);
+        setSelectedMemoryId(serverSettings.memories?.[0]?.id);
+      }
+    } catch (error) {
+      setLoginError(error.message || 'Không thể đăng nhập.');
+    }
+  };
+
+  const handleLogout = async () => {
+    await logoutEditor();
+    setSessionState('locked');
+  };
+
+  if (sessionState !== 'authenticated') {
+    return (
+      <main style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', padding: '24px', background: 'linear-gradient(135deg, #fff7ef, #ffe9e8 55%, #fce5dc)' }}>
+        <form onSubmit={handleLogin} className="glass-panel" style={{ width: 'min(430px, 100%)', padding: '34px', textAlign: 'center' }}>
+          <LockKeyhole size={34} color="var(--accent-primary)" style={{ marginBottom: '12px' }} />
+          <h1 style={{ fontFamily: 'var(--font-handwriting)', fontSize: '2.2rem', marginBottom: '8px' }}>Bảo vệ trang chỉnh sửa</h1>
+          {sessionState === 'loading' ? (
+            <p style={{ color: 'var(--text-muted)' }}>Đang kiểm tra phiên đăng nhập...</p>
+          ) : sessionState === 'unconfigured' ? (
+            <p style={{ color: '#991b1b', lineHeight: 1.6 }}>Máy chủ chưa có ADMIN_PASSWORD và EDITOR_SESSION_SECRET. Hãy thêm hai biến này trong môi trường chạy web.</p>
+          ) : (
+            <>
+              <p style={{ color: 'var(--text-muted)', marginBottom: '18px' }}>Nhập mật khẩu quản trị để thay đổi nội dung, ảnh và bài hát.</p>
+              <input autoFocus type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Mật khẩu quản trị" style={fieldStyle} />
+              {loginError && <p style={{ color: '#b91c1c', marginTop: '10px' }}>{loginError}</p>}
+              <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '16px' }} disabled={!password}>Đăng nhập</button>
+            </>
+          )}
+          <button type="button" onClick={onExit} className="btn-secondary" style={{ marginTop: '14px' }}><ArrowLeft size={17} />Về thiệp</button>
+        </form>
+      </main>
+    );
+  }
 
   return (
     <main style={{ minHeight: '100vh', padding: '30px 16px 100px', background: 'linear-gradient(135deg, #fff7ef, #ffe9e8 55%, #fce5dc)', position: 'relative' }}>
@@ -251,7 +322,7 @@ export default function EditorPage({ onExit, onSaved }) {
       <div style={{ maxWidth: '960px', margin: '0 auto' }}>
         <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '14px', flexWrap: 'wrap', marginBottom: '26px' }}>
           <div><p style={{ color: 'var(--accent-primary)', fontFamily: 'var(--font-handwriting)', fontSize: '1.5rem', fontWeight: 700 }}>Bảng chỉnh sửa</p><h1 style={{ fontFamily: 'var(--font-handwriting)', fontSize: 'clamp(2.2rem, 6vw, 3.2rem)' }}>Nội dung cho thiệp sinh nhật</h1></div>
-          <button onClick={onExit} className="btn-secondary"><ArrowLeft size={17} /><span>Về thiệp</span></button>
+          <div style={{ display: 'flex', gap: '8px' }}><button onClick={handleLogout} className="btn-secondary"><LogOut size={17} /><span>Đăng xuất</span></button><button onClick={onExit} className="btn-secondary"><ArrowLeft size={17} /><span>Về thiệp</span></button></div>
         </header>
 
         <section className="glass-panel" style={{ padding: '28px', marginBottom: '20px' }}>
@@ -261,6 +332,28 @@ export default function EditorPage({ onExit, onSaved }) {
             <label style={{ color: 'var(--text-muted)', fontWeight: 700, fontSize: '.9rem' }}>Ngày sinh nhật<input value={settings.cardData.birthDate} onChange={(event) => updateCardData('birthDate', event.target.value)} placeholder="05 / 10" style={fieldStyle} /></label>
             <label style={{ gridColumn: '1 / -1', color: 'var(--text-muted)', fontWeight: 700, fontSize: '.9rem' }}>Tiêu đề thiệp<input value={settings.cardData.title} onChange={(event) => updateCardData('title', event.target.value)} style={fieldStyle} /></label>
             <label style={{ gridColumn: '1 / -1', color: 'var(--text-muted)', fontWeight: 700, fontSize: '.9rem' }}>Lời chúc<textarea rows="4" value={settings.cardData.message} onChange={(event) => updateCardData('message', event.target.value)} style={{ ...fieldStyle, resize: 'vertical', lineHeight: 1.55 }} /></label>
+          </div>
+        </section>
+
+        <section className="glass-panel" style={{ padding: '28px', marginBottom: '20px' }}>
+          <h2 style={{ fontFamily: 'var(--font-handwriting)', fontSize: '2rem', marginBottom: '8px' }}>Hộp quà và Gieo thẻ</h2>
+          <p style={{ color: 'var(--text-muted)', marginBottom: '18px' }}>Nội dung hai lựa chọn bất ngờ trên trang chính.</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '18px' }}>
+            {[
+              ['gift', 'Hộp quà'],
+              ['fortune', 'Gieo thẻ'],
+            ].map(([key, label]) => {
+              const card = settings.surpriseCards?.[key] || {};
+              return (
+                <div key={key} style={{ display: 'grid', gap: '10px', padding: '16px', borderRadius: '8px', background: 'rgba(255,255,255,.45)', border: '1px solid #ead6d2' }}>
+                  <h3 style={{ fontFamily: 'var(--font-handwriting)', fontSize: '1.45rem' }}>{label}</h3>
+                  <label style={{ color: 'var(--text-muted)', fontWeight: 700, fontSize: '.9rem' }}>Tiêu đề<input value={card.title || ''} onChange={(event) => updateSurpriseCard(key, 'title', event.target.value)} style={fieldStyle} /></label>
+                  <label style={{ color: 'var(--text-muted)', fontWeight: 700, fontSize: '.9rem' }}>Mô tả<textarea rows="2" value={card.description || ''} onChange={(event) => updateSurpriseCard(key, 'description', event.target.value)} style={{ ...fieldStyle, resize: 'vertical' }} /></label>
+                  <label style={{ color: 'var(--text-muted)', fontWeight: 700, fontSize: '.9rem' }}>Nhãn nút<input value={card.action || ''} onChange={(event) => updateSurpriseCard(key, 'action', event.target.value)} style={fieldStyle} /></label>
+                  <label style={{ color: 'var(--text-muted)', fontWeight: 700, fontSize: '.9rem' }}>Ảnh minh họa URL<input value={card.image || ''} onChange={(event) => updateSurpriseCard(key, 'image', event.target.value)} placeholder="https://..." style={fieldStyle} /></label>
+                </div>
+              );
+            })}
           </div>
         </section>
 
@@ -300,9 +393,9 @@ export default function EditorPage({ onExit, onSaved }) {
         </section>
 
         <div style={{ position: 'sticky', bottom: '18px', display: 'flex', justifyContent: 'center', marginTop: '24px' }}>
-          <button onClick={save} className="btn-primary" style={{ padding: '13px 28px', boxShadow: '0 10px 28px rgba(200,94,111,.3)', gap: '8px' }}>
-            <Save size={18} />
-            <span>Lưu thay đổi</span>
+          <button onClick={save} disabled={isSaving} className="btn-primary" style={{ padding: '13px 28px', boxShadow: '0 10px 28px rgba(200,94,111,.3)', gap: '8px', opacity: isSaving ? .7 : 1 }}>
+            {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+            <span>{isSaving ? 'Đang lưu...' : 'Lưu thay đổi'}</span>
           </button>
         </div>
       </div>

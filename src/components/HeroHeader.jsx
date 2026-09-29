@@ -6,8 +6,6 @@ import { soundEngine } from '../utils/audioSynth';
 
 export default function HeroHeader({
   cardData,
-  onOpenGift,
-  onOpenFortune,
   onReopenEnvelope,
   onScrollToCake,
   onOpenEditor
@@ -84,7 +82,7 @@ export default function HeroHeader({
 
         {/* Date badge */}
         <motion.div whileHover={{ y: -2 }} className="birthday-date-ribbon">
-          <span className="birthday-date-ribbon__date"><Calendar size={18} strokeWidth={1.9} />{cardData.birthDate || '05 / 10'}</span>
+          <span className="birthday-date-ribbon__date"><Calendar size={18} strokeWidth={1.9} />{cardData.birthDate || 'Chưa đặt ngày'}</span>
           <span className="birthday-date-ribbon__divider" />
           <span className="birthday-date-ribbon__label">Ngày của em</span>
         </motion.div>
@@ -99,7 +97,7 @@ export default function HeroHeader({
             marginBottom: '4px',
           }}
         >
-          {cardData.title || 'Chúc Mừng Sinh Nhật'}
+          {cardData.title || 'Chưa có tiêu đề'}
         </div>
 
         {/* Name */}
@@ -116,7 +114,7 @@ export default function HeroHeader({
             filter: 'drop-shadow(0 8px 12px rgba(167, 73, 92, 0.12))',
           }}
         >
-          {cardData.name || 'Minh Anh'}
+          {cardData.name || 'Người nhận'}
         </h1>
 
         {/* Subtitle / Decorative Divider */}
@@ -147,7 +145,7 @@ export default function HeroHeader({
             fontWeight: 400,
           }}
         >
-          {cardData.message || `Chúc em một ngày sinh nhật thật rực rỡ, ấm áp và đong đầy nụ cười!\nƯớc mong tuổi mới của em sẽ mở ra ngàn vạn điều may mắn, vạn sự hanh thông và luôn xinh đẹp rạng ngời như ánh ban mai.`}
+          {cardData.message || 'Chưa có lời chúc. Hãy thêm nội dung trong trang chỉnh sửa.'}
         </p>
 
         {/* Feature Action Buttons */}

@@ -30,7 +30,7 @@ function pickLuckyRewardIndex() {
   return 0;
 }
 
-export default function GiftBoxModal({ isOpen, onClose, recipientName = 'Minh Anh' }) {
+export default function GiftBoxModal({ isOpen, onClose, recipientName = '' }) {
   const [phase, setPhase] = useState('idle');
   const [targetIndex, setTargetIndex] = useState(22);
   const [rewardIndex, setRewardIndex] = useState(0);
@@ -74,7 +74,7 @@ export default function GiftBoxModal({ isOpen, onClose, recipientName = 'Minh An
           {phase === 'idle' && (
             <div className="gift-case-intro">
               <span className="gift-case-kicker">HỘP QUÀ BÍ MẬT</span>
-              <h2>Dành riêng cho {recipientName}</h2>
+              <h2>Dành riêng cho {recipientName || 'người nhận'}</h2>
               <p>Có nhiều voucher đang chờ trong hộp quà. Mở một lần để xem may mắn dừng lại ở đâu.</p>
               <motion.button whileHover={{ y: -5, rotate: -1 }} whileTap={{ scale: .96 }} onClick={openCase} className="gift-case-box" aria-label="Mở hộp quà">
                 <img src={giftBoxImage} alt="Hộp quà thắt nơ" />
@@ -107,7 +107,7 @@ export default function GiftBoxModal({ isOpen, onClose, recipientName = 'Minh An
           {phase === 'result' && (
             <motion.div initial={{ opacity: 0, scale: .86 }} animate={{ opacity: 1, scale: 1 }} className="gift-case-result">
               <span className="gift-case-kicker">VOUCHER CỦA EM</span>
-              <h2>Chúc mừng, {recipientName}!</h2>
+              <h2>Chúc mừng, {recipientName || 'người nhận'}!</h2>
               <div className="gift-case-reward" style={{ '--reward-tone': selectedReward.tone }}>
                 <Award size={28} />
                 <h3>{selectedReward.title}</h3>
