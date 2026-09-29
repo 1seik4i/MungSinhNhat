@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Wand2, Compass } from 'lucide-react';
 import { soundEngine } from '../utils/audioSynth';
-import { blastStars } from '../utils/confettiHelper';
+import { blastStars, launchWishCelebration } from '../utils/confettiHelper';
 
 const FORTUNES = [
   { title: 'Quẻ Đại Cát', fortune: 'Một cơ hội đẹp đang chờ em ở tuổi mới. Hãy tự tin đón lấy!', luckyNum: '05 · 10 · 88', zodiacWish: 'May mắn đến đúng lúc, và những điều em mong chờ dần thành hiện thực.' },
@@ -22,6 +22,7 @@ export default function MiniGamesModal({ isOpen, onClose }) {
     setSelectedFortune(FORTUNES[Math.floor(Math.random() * FORTUNES.length)]);
     setCookieCracked(true);
     blastStars();
+    launchWishCelebration();
   };
 
   const resetCookie = () => {

@@ -10,7 +10,7 @@ import PhotoGallery from './components/PhotoGallery';
 import GiftBoxModal from './components/GiftBoxModal';
 import MiniGamesModal from './components/MiniGamesModal';
 import MusicPlayer from './components/MusicPlayer';
-import { launchSideCannons } from './utils/confettiHelper';
+import { launchFireworksShow, launchSideCannons } from './utils/confettiHelper';
 import { getAudioFileUrl, loadContentSettings, fetchServerContentSettings } from './utils/contentSettings';
 import { Heart, Sparkles } from 'lucide-react';
 
@@ -27,6 +27,12 @@ export default function App() {
   const isEditorPage = new URLSearchParams(window.location.search).get('edit') === '1';
 
   const [cardData, setCardData] = useState(() => loadContentSettings().cardData);
+
+  useEffect(() => {
+    if (isEditorPage) return undefined;
+    const timer = window.setTimeout(() => launchFireworksShow(1700), 550);
+    return () => window.clearTimeout(timer);
+  }, [isEditorPage]);
 
   // Keep the public card aligned with the shared Supabase content on every device.
   useEffect(() => {

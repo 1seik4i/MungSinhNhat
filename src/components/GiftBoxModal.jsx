@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Award, Gift, RotateCcw, Ticket } from 'lucide-react';
 import { soundEngine } from '../utils/audioSynth';
-import { blastConfetti, blastHearts } from '../utils/confettiHelper';
+import { blastConfetti, blastHearts, launchFireworksShow } from '../utils/confettiHelper';
 import giftBoxImage from '../assets/gift-box-real.png';
 
 const REWARDS = [
@@ -52,6 +52,7 @@ export default function GiftBoxModal({ isOpen, onClose, recipientName = '' }) {
     soundEngine.playSparkle();
     blastConfetti();
     blastHearts();
+    launchFireworksShow(1600);
     setPhase('result');
   };
 

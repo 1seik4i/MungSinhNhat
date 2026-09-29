@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { soundEngine } from '../utils/audioSynth';
-import { blastConfetti, blastStars } from '../utils/confettiHelper';
+import { blastConfetti, blastStars, launchWishCelebration } from '../utils/confettiHelper';
 import { Wind, RotateCcw, Mic, MicOff, Sparkles, CakeSlice, Send } from 'lucide-react';
 import interactiveCake from '../assets/strawberry-birthday-cake-final.png';
 
@@ -196,6 +196,7 @@ export default function InteractiveCake() {
     setSubmittedWish(wish);
     setWishMade('');
     blastStars();
+    launchWishCelebration();
     try {
       await fetch('/api/wishes', {
         method: 'POST',
