@@ -1,3 +1,4 @@
+import { useRecipientCopy } from '../hooks/useRecipientCopy';
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Sparkles, Share2, Mail, CakeSlice, PartyPopper, Settings2 } from 'lucide-react';
@@ -8,8 +9,10 @@ export default function HeroHeader({
   cardData,
   onReopenEnvelope,
   onScrollToCake,
-  onOpenEditor
+  onOpenEditor,
+  onShare
 }) {
+  const copy=useRecipientCopy();
   const handleCelebrationClick = () => {
     soundEngine.playSparkle();
     blastConfetti();
@@ -17,6 +20,7 @@ export default function HeroHeader({
   };
 
   const handleShare = () => {
+    if (onShare) return onShare();
     soundEngine.playPop();
     if (navigator.clipboard) {
       navigator.clipboard.writeText(window.location.href);
@@ -38,7 +42,7 @@ export default function HeroHeader({
           <Mail size={15} color="var(--accent-primary)" />
           <span>Mở lại bức thư</span>
         </button>
-        <button
+        {onShare && <button
           onClick={handleShare}
           className="btn-secondary"
           style={{ fontSize: '0.85rem', padding: '6px 14px' }}
@@ -46,11 +50,11 @@ export default function HeroHeader({
         >
           <Share2 size={15} />
           <span>Chia sẻ</span>
-        </button>
-        <button onClick={onOpenEditor} className="btn-secondary" style={{ fontSize: '0.85rem', padding: '6px 14px' }} title="Chỉnh ảnh thẻ và nhạc nền">
+        </button>}
+        {onOpenEditor && <button onClick={onOpenEditor} className="btn-secondary" style={{ fontSize: '0.85rem', padding: '6px 14px' }} title="Chỉnh ảnh thẻ và nhạc nền">
           <Settings2 size={15} />
           <span>Chỉnh sửa nội dung</span>
-        </button>
+        </button>}
       </div>
 
       {/* Main Glass Greeting Card */}
@@ -84,7 +88,7 @@ export default function HeroHeader({
         <motion.div whileHover={{ y: -2 }} className="birthday-date-ribbon">
           <span className="birthday-date-ribbon__date"><Calendar size={18} strokeWidth={1.9} />{cardData.birthDate || 'Chưa đặt ngày'}</span>
           <span className="birthday-date-ribbon__divider" />
-          <span className="birthday-date-ribbon__label">Ngày của em</span>
+          <span className="birthday-date-ribbon__label">{copy.day}</span>
         </motion.div>
 
         {/* Greeting Title */}

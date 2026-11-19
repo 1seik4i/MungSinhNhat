@@ -1,34 +1,38 @@
+import { useRecipientCopy } from '../hooks/useRecipientCopy';
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
 import giftBox from '../assets/gift-box-real.png';
 import fortuneCookie from '../assets/fortune-cookie-real.png';
+import { FORTUNE_CARD } from '../../shared/fortunes';
+import { GIFT_CARD } from '../../shared/giftRewards';
 
-export default function BirthdaySurprises({ onOpenGift, onOpenFortune, cardSettings }) {
+export default function BirthdaySurprises({ onOpenGift, onOpenFortune, cardSettings, giftEnabled = true, fortuneEnabled = true }) {
+  const copy=useRecipientCopy();
   const options = [
     {
-      image: cardSettings?.gift?.image || giftBox,
+      image: giftBox,
       imageAlt: 'Hộp quà thắt nơ',
-      title: cardSettings?.gift?.title || '',
-      description: cardSettings?.gift?.description || '',
-      action: cardSettings?.gift?.action || '',
+      title: cardSettings?.gift?.title?.trim() || GIFT_CARD.title,
+      description: GIFT_CARD.description,
+      action: GIFT_CARD.action,
       onClick: onOpenGift,
       accent: '#c85e6f',
       background: 'linear-gradient(135deg, #fff2ed, #fbe0df)',
     },
     {
-      image: cardSettings?.fortune?.image || fortuneCookie,
+      image: fortuneCookie,
       imageAlt: 'Bánh quy may mắn',
-      title: cardSettings?.fortune?.title || '',
-      description: cardSettings?.fortune?.description || '',
-      action: cardSettings?.fortune?.action || '',
+      title: FORTUNE_CARD.title,
+      description: FORTUNE_CARD.description,
+      action: FORTUNE_CARD.action,
       onClick: onOpenFortune,
       accent: '#b78940',
       background: 'linear-gradient(135deg, #fff8e8, #f7e9c9)',
     },
   ];
 
-  const visibleOptions = options.filter(({ title, description, action }) => title && description && action);
+  const visibleOptions = options.filter(({ title, description, action }, index) => title && description && action && (index === 0 ? giftEnabled : fortuneEnabled));
   if (!visibleOptions.length) return null;
 
   return (
@@ -42,7 +46,7 @@ export default function BirthdaySurprises({ onOpenGift, onOpenFortune, cardSetti
       >
         <div style={{ textAlign: 'center', marginBottom: '22px' }}>
           <p style={{ color: 'var(--accent-primary)', fontFamily: 'var(--font-handwriting)', fontSize: '1.4rem', fontWeight: 700 }}>Thêm một chút bất ngờ</p>
-          <h2 className="mobile-balanced-heading" style={{ marginTop: '4px', fontFamily: 'var(--font-handwriting)', fontSize: 'clamp(2rem, 5vw, 2.7rem)', fontWeight: 700 }}><span>Chọn món quà</span>{' '}<span className="keep-together">dành cho em</span></h2>
+          <h2 className="mobile-balanced-heading" style={{ marginTop: '4px', fontFamily: 'var(--font-handwriting)', fontSize: 'clamp(2rem, 5vw, 2.7rem)', fontWeight: 700 }}><span>Chọn món quà</span>{' '}<span className="keep-together">dành cho {copy.you}</span></h2>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '16px' }}>
           {visibleOptions.map(({ image, imageAlt, title, description, action, onClick, accent, background }) => (

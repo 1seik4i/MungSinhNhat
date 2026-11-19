@@ -5,6 +5,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { createHash, createHmac, randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'crypto';
 import { ensureDatabase } from './db.js';
+import { platform } from './platform.js';
+import swaggerUi from 'swagger-ui-express';
+import openapi from './openapi.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -36,13 +39,20 @@ const EMPTY_CONTENT = {
 app.disable('x-powered-by');
 app.use((req, res, next) => {
   res.set('X-Content-Type-Options', 'nosniff');
-  res.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.set('Referrer-Policy', 'no-referrer');
   res.set('X-Frame-Options', 'DENY');
-  res.set('Content-Security-Policy', "default-src 'self'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; object-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob: https:; frame-src https://www.youtube.com; connect-src 'self' https://www.youtube.com https://*.youtube.com");
+  res.set('Content-Security-Policy', "default-src 'self'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; object-src 'none'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' blob: https:; frame-src https://www.youtube.com https://challenges.cloudflare.com; connect-src 'self' https://challenges.cloudflare.com https://www.youtube.com https://*.youtube.com");
   if (req.secure || req.get('x-forwarded-proto') === 'https') res.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   next();
 });
 app.use(express.json({ limit: '25mb' }));
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/api/openapi.json', (req,res)=>res.json(openapi));
+  app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(null,{swaggerOptions:{url:'/api/openapi.json',validatorUrl:null},customSiteTitle:'CMSN API'}));
+}
+app.use('/api/platform', platform);
+// Retired global-content APIs must never bypass per-user ownership.
+app.use('/api', (req, res) => res.status(410).json({ message: 'API cũ đã ngừng phục vụ. Vui lòng dùng hệ thống tài khoản mới.' }));
 
 const route = (handler) => (req, res, next) => Promise.resolve(handler(req, res)).catch(next);
 

@@ -1,0 +1,35 @@
+{
+  "archive": "MungSinhNhat-master.zip",
+  "archiveSha256": "656b27cd12601b4a20ac90174f8f453ccd5f81876c3ca3ea36cea81994d3f4c9",
+  "restoredFiles": {
+    "index.html": "cc6af2dd7e69d02c81accaf32a24d87d7228d5a7611c2ed15ecae7c6ff21dd49",
+    "public/audio/hieuthuhai-sinh-nhat.mp3": "a4b5c220850faf1c197e5ce329c9a4bb213ccdb606da2966f9ae63d047876d9e",
+    "public/audio/phan-dinh-tung-khuc-hat-mung-sinh-nhat.mp3": "809b423ad5b5a664074d4b516c67e1de128d286bc4b792ce776dfd570647373a",
+    "src/assets/balloon.webp": "d022299b1b1503d9d825e010b20f3727e95c7c90c7bdb0d7095d22a5b9bede13",
+    "src/assets/birthday-bunting-cropped.png": "cc96d95559c64a47ae5745d699d64667ae0258255ce377675cededb4975d110e",
+    "src/assets/birthday-cake.webp": "57084b37f4492e470880278badf4e434777982e3eec63fa278e75a16d853575e",
+    "src/assets/fortune-cookie-real.png": "85157c0afc9fa2ff43fad7c4dd39c7fdf348b39ba38e8770d9aad9d35cc32d7c",
+    "src/assets/gift-box-real.png": "11fd7e2defb7ad6e0735dbdefc6bc551aaeed4a12cada39e4faf189b0d274eff",
+    "src/assets/golden-happy-birthday-cropped.png": "cefdf107aee74a5ac9757058fd1dc301a1cae43013302a1b2c61c76d9f31a864",
+    "src/assets/party-popper.webp": "aeff875df341bb7136fa4c84538000a3d4aea8a6dd16245ee8fa1c8bbfeb6ddc",
+    "src/assets/strawberry-birthday-cake-final.png": "338aa8eacf60395b2145dcf98c67337c9de57721e424850061c6b7553b91c58f",
+    "src/components/BirthdayDecorations.jsx": "9b6647912d40563123b4590789bb956e09602b4dd435a990716b14acca80d568",
+    "src/components/CanvasEffects.jsx": "d9f9487ae3cc0505aa94d60ac383b9e0f35c077df424705f36a04a98ef685c9f",
+    "src/components/EnvelopeModal.jsx": "829cc5fd3c83456b0b2532770ae5afc8958811ac379f1a7bc96ee89565e2ace8",
+    "src/components/FallingTreats.jsx": "4b5cd6d66f246e586ae8542468055056b750b9d8931ac08b8908530f2463a6a9",
+    "src/components/MusicPlayer.jsx": "7f1e0f59103198e52c077b03ae4808c94887ba2546f4e060ab12fffbd6d7edd9",
+    "src/components/PhotoGallery.jsx": "563466b4402425bf608fb893be59042f05ef8b633aebd6d723645128f210dc37",
+    "src/index.css": "c72a7b4dbb0a7cad7a6c9f0c0f1d9a9a51bd8d8f7a85a533eba788c7d271c46c",
+    "src/utils/audioSynth.js": "65f5c83bcccad21c12cf3951a73184b3c99bf6eaa18e1d0a4bd832a9c82a487c",
+    "src/utils/confettiHelper.js": "a9d72b2c6aaabc965b4a3b6b5471de0ac79fdae3229ede717a73d8e8b486da9b"
+  },
+  "adaptedFiles": [
+    "src/App.jsx",
+    "src/components/EditorPage.jsx",
+    "src/components/HeroHeader.jsx",
+    "src/components/InteractiveCake.jsx",
+    "src/components/GiftBoxModal.jsx",
+    "src/components/BirthdaySurprises.jsx",
+    "src/components/MiniGamesModal.jsx"
+  ]
+}

@@ -1,0 +1,14 @@
+import React from 'react';
+import { DEFAULT_FORTUNES } from '../../shared/fortunes';
+import { Compass, Plus, Trash2 } from 'lucide-react';
+
+export function SurpriseCardFields({label,card,onChange}) {
+  return <div style={{padding:'16px 0 24px',display:'grid',gap:12}}>{Object.entries({title:'Tiêu đề hiển thị'}).map(([field,title])=><label key={field}>{title}<input aria-label={`${title} ${label}`} value={card?.[field]||''} onChange={e=>onChange(field,e.target.value)} style={{display:'block',width:'100%',padding:11,marginTop:6,border:'1px solid #ead6d2',borderRadius:10,font:'inherit',background:'#fffdfb'}}/></label>)}</div>;
+}
+export default function FortunesEditor({fortunes,onChange,children}) {
+  const update=(id,field,value)=>onChange(fortunes.map(f=>f.id===id?{...f,[field]:value}:f));
+  return <section className="glass-panel" aria-label="Gieo quẻ may mắn" style={{padding:28,marginBottom:20}}><h2 style={{fontFamily:'var(--font-handwriting)',fontSize:'2rem'}}><Compass size={24}/> Gieo quẻ may mắn</h2><p style={{marginTop:8,color:'var(--text-muted)'}}>Lời nhắn và con số may mắn, độc lập với danh sách phần quà. Hình bánh may mắn có sẵn, không cần URL ảnh.</p>{children}<button type="button" className="btn-secondary" onClick={()=>onChange(structuredClone(DEFAULT_FORTUNES))}>Mặc định hệ thống</button>
+    {!fortunes.length&&<p style={{marginTop:16}}>Chưa có quẻ. Phần gieo quẻ sẽ được ẩn cho đến khi bạn thêm quẻ mới.</p>}
+    <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,280px),1fr))',gap:16,marginTop:18}}>{fortunes.map((f,index)=><fieldset key={f.id} style={{minWidth:0,padding:16,border:'1px solid #ead6d2',borderRadius:14}}><legend>Quẻ {index+1}</legend>{Object.entries({title:'Tên quẻ',fortune:'Nội dung quẻ',luckyNum:'Con số may mắn',zodiacWish:'Lời chúc tuổi mới'}).map(([field,label])=><label key={field} style={{display:'block',marginBottom:12}}>{label}<textarea rows={field==='fortune'||field==='zodiacWish'?3:1} aria-label={`${label} ${index+1}`} maxLength={field==='title'?120:field==='luckyNum'?80:1000} value={f[field]} onChange={e=>update(f.id,field,e.target.value)} style={{width:'100%',display:'block',padding:11,marginTop:6,border:'1px solid #ead6d2',borderRadius:10,font:'inherit',background:'#fffdfb'}}/></label>)}<button type="button" className="btn-secondary" aria-label={`Xóa quẻ ${index+1}`} onClick={()=>onChange(fortunes.filter(item=>item.id!==f.id))}><Trash2 size={16}/> Xóa quẻ</button></fieldset>)}<button type="button" className="collection-add" disabled={fortunes.length>=50} onClick={()=>onChange([...fortunes,{id:crypto.randomUUID(),title:'Quẻ mới',fortune:'Chúc bạn một tuổi mới thật nhiều may mắn!',luckyNum:'08 · 18 · 28',zodiacWish:'Mọi điều tốt đẹp đang chờ bạn.'}])}><Plus size={17}/> Thêm quẻ</button></div>
+  </section>;
+}

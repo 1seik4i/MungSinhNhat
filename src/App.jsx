@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import CanvasEffects from './components/CanvasEffects';
 import BirthdayDecorations from './components/BirthdayDecorations';
 import FallingTreats from './components/FallingTreats';
@@ -11,130 +11,27 @@ import GiftBoxModal from './components/GiftBoxModal';
 import MiniGamesModal from './components/MiniGamesModal';
 import MusicPlayer from './components/MusicPlayer';
 import { launchFireworksShow, launchSideCannons } from './utils/confettiHelper';
-import { getAudioFileUrl, loadContentSettings, fetchServerContentSettings } from './utils/contentSettings';
 import { Heart, Sparkles } from 'lucide-react';
+import { getGiftRewards } from '../shared/giftRewards';
+import { getFortunes } from '../shared/fortunes';
+import { RecipientGenderContext } from './hooks/useRecipientCopy';
 
-const EditorPage = lazy(() => import('./components/EditorPage'));
-
-export default function App() {
+// Presentation is taken from MungSinhNhat-master.zip. The account/viewer layer
+// supplies authorized content; this component never loads global or cached content.
+export default function BirthdayPage({ content, onEdit, onShare }) {
   const [envelopeOpened, setEnvelopeOpened] = useState(false);
   const [isGiftOpen, setIsGiftOpen] = useState(false);
   const [isFortuneOpen, setIsFortuneOpen] = useState(false);
-  const [contentLoaded, setContentLoaded] = useState(false);
-  const [contentSettings, setContentSettings] = useState(loadContentSettings);
-  const [customTracks, setCustomTracks] = useState([]);
-
-  const isEditorPage = new URLSearchParams(window.location.search).get('edit') === '1';
-
-  const [cardData, setCardData] = useState(() => loadContentSettings().cardData);
-
+  const contentSettings = content;
+  const cardData = content.cardData;
+  const customTracks = content.tracks;
+  const contentLoaded = true;
+  const giftRewards = getGiftRewards(content);
+  const fortunes = getFortunes(content);
   useEffect(() => {
-    if (isEditorPage) return undefined;
     const timer = window.setTimeout(() => launchFireworksShow(1700), 550);
     return () => window.clearTimeout(timer);
-  }, [isEditorPage]);
-
-  // Keep the public card aligned with the shared Supabase content on every device.
-  useEffect(() => {
-    if (isEditorPage) return undefined;
-
-    let active = true;
-    const refreshContent = async () => {
-      const serverSettings = await fetchServerContentSettings();
-      if (!active || !serverSettings) return;
-      setContentSettings((current) => (
-        JSON.stringify(current) === JSON.stringify(serverSettings) ? current : serverSettings
-      ));
-    };
-
-    refreshContent().finally(() => {
-      if (active) setContentLoaded(true);
-    });
-
-    const refreshWhenVisible = () => {
-      if (document.visibilityState === 'visible') refreshContent();
-    };
-    window.addEventListener('focus', refreshContent);
-    window.addEventListener('online', refreshContent);
-    document.addEventListener('visibilitychange', refreshWhenVisible);
-    const interval = window.setInterval(refreshContent, 10_000);
-
-    return () => {
-      active = false;
-      window.clearInterval(interval);
-      window.removeEventListener('focus', refreshContent);
-      window.removeEventListener('online', refreshContent);
-      document.removeEventListener('visibilitychange', refreshWhenVisible);
-    };
-  }, [isEditorPage]);
-
-  // Check URL query parameters for custom cards
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const cardId = params.get('card');
-    const nameParam = params.get('name');
-    const dateParam = params.get('date');
-
-    if (cardId) {
-      fetch(`/api/card/${cardId}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.success && data.data) {
-            setCardData(data.data);
-          }
-        })
-        .catch(err => console.warn('Could not fetch custom card ID:', err));
-    } else if (nameParam) {
-      setCardData(prev => ({
-        ...prev,
-        name: nameParam,
-        birthDate: dateParam || prev.birthDate,
-      }));
-    }
   }, []);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('card')) return;
-    const nameParam = params.get('name');
-    const dateParam = params.get('date');
-    setCardData((current) => ({
-      ...current,
-      ...contentSettings.cardData,
-      ...(nameParam ? { name: nameParam, birthDate: dateParam || contentSettings.cardData.birthDate } : {}),
-    }));
-  }, [contentSettings.cardData]);
-
-  useEffect(() => {
-    let active = true;
-    const objectUrls = [];
-    Promise.all(contentSettings.tracks.map(async (track) => {
-      const source = track.type === 'file' ? await getAudioFileUrl(track.source) : track.source;
-      if (track.type === 'file' && source) objectUrls.push(source);
-      return { ...track, source };
-    })).then((tracks) => {
-      if (active) setCustomTracks(tracks.filter((track) => track.source));
-    });
-    return () => {
-      active = false;
-      objectUrls.forEach((url) => URL.revokeObjectURL(url));
-    };
-  }, [contentSettings]);
-
-  if (isEditorPage) {
-    return (
-      <Suspense fallback={<main style={{ minHeight: '100vh', display: 'grid', placeItems: 'center' }}>Đang mở trang chỉnh sửa...</main>}>
-        <EditorPage
-          onSaved={(savedSettings) => setContentSettings(savedSettings || loadContentSettings())}
-          onExit={() => {
-            const url = new URL(window.location.href);
-            url.searchParams.delete('edit');
-            window.location.assign(url.toString());
-          }}
-        />
-      </Suspense>
-    );
-  }
 
   const handleOpenEnvelope = () => {
     setEnvelopeOpened(true);
@@ -155,7 +52,7 @@ export default function App() {
   };
 
   return (
-    <div style={{ position: 'relative', minHeight: '100vh', paddingBottom: '100px' }}>
+    <RecipientGenderContext.Provider value={cardData.gender}><div style={{ position: 'relative', minHeight: '100vh', paddingBottom: '100px' }}>
       {/* Background visual canvas with twinkling stars and floral petals */}
       <CanvasEffects />
       <BirthdayDecorations />
@@ -177,21 +74,20 @@ export default function App() {
           cardData={cardData}
           onReopenEnvelope={() => setEnvelopeOpened(false)}
           onScrollToCake={() => scrollToSection('cake-section')}
-          onOpenEditor={() => {
-            const url = new URL(window.location.href);
-            url.searchParams.set('edit', '1');
-            window.location.assign(url.toString());
-          }}
+          onOpenEditor={onEdit}
+          onShare={onShare}
         />
 
         {/* Interactive 3D Birthday Cake */}
-        <InteractiveCake />
+        <InteractiveCake onOpenGift={()=>setIsGiftOpen(true)} onOpenFortune={()=>setIsFortuneOpen(true)} giftEnabled={giftRewards.length>0}/>
 
         {contentLoaded && (
           <BirthdaySurprises
             onOpenGift={() => setIsGiftOpen(true)}
             onOpenFortune={() => setIsFortuneOpen(true)}
             cardSettings={contentSettings.surpriseCards}
+            giftEnabled={giftRewards.length > 0}
+            fortuneEnabled={fortunes.length > 0}
           />
         )}
 
@@ -227,13 +123,15 @@ export default function App() {
         isOpen={isGiftOpen}
         onClose={() => setIsGiftOpen(false)}
         recipientName={cardData.name}
+        rewards={giftRewards}
       />
 
       <MiniGamesModal
+        fortunes={fortunes}
         isOpen={isFortuneOpen}
         onClose={() => setIsFortuneOpen(false)}
       />
 
-    </div>
+    </div></RecipientGenderContext.Provider>
   );
 }
