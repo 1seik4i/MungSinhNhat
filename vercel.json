@@ -22,8 +22,8 @@
   ],
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/index.js"
+      "source": "/api/:path*",
+      "destination": "https://mungsinhnhat.onrender.com/api/:path*"
     },
     {
       "source": "/(.*)",
