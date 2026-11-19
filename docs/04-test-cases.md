@@ -53,7 +53,7 @@ TC-S02/S03/S05 phải chạy thành ma trận method × endpoint × actor; khôn
 | TC-P01 | P0 | FR-05,06 | A mới mở dashboard, tạo trang; kiểm tra B | Nháp trắng/mẫu sạch, hai bài mặc định; không lấy nội dung B/legacy |
 | TC-P02 | P0 | FR-06 | Gửi hai request tạo trang đồng thời cho cùng user | Một trang hoạt động, request còn lại 409; không orphan nháp/media |
 | TC-P03 | P0 | FR-07,08 | Nhập đủ mọi nhóm nội dung, sắp ảnh/nhạc, lưu, tải lại từ thiết bị khác | Các giá trị/thứ tự/flags khớp server; không phụ thuộc cache thiết bị |
-| TC-P04 | P0 | FR-07,10 | Lưu nháp thiếu trường; generate với tên trống/ngày sai/năm nhuận sai/ngày tương lai/lời chúc trống | Nháp rỗng lưu được; generate 422 đúng trường, không tạo snapshot |
+| TC-P04 | P0 | FR-07,10 | Lưu nháp thiếu trường; generate với tên trống/ngày sai/năm nhuận sai/lời chúc trống | Nháp rỗng lưu được; generate 422 đúng trường, không tạo snapshot |
 | TC-P05 | P0 | FR-07 | Với từng trường thử giới hạn N và N+1, Unicode; album/playlist 100 và 101 | Biên hợp lệ được nhận; vượt bị từ chối cả API; không cắt âm thầm |
 | TC-P06 | P0 | FR-08; NFR-05 | Hai tab r1, tab 1 lưu r2, tab 2 lưu với r1 | Tab 2 nhận 409, r2 còn nguyên; UI có cách xử lý xung đột |
 | TC-P07 | P0 | FR-09–11 | Lưu r2, preview, generate; mở URL bằng tài khoản đúng | Preview khớp r2; snapshot có đủ card/quà/album/playlist, URL riêng hoạt động |

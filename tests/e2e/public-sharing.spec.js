@@ -17,7 +17,7 @@ test('real shared QR link opens directly in a fresh browser without account logi
   await pool.query('INSERT INTO cms_pages(id,owner,draft) VALUES($1,$2,$3)',[id,owner,JSON.stringify(content)]);
   await pool.query('INSERT INTO cms_media VALUES($1,$2,$3,$4)',[media,id,'image/png',Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l9sAAAAASUVORK5CYII=','base64')]);
   await page.context().addCookies([{name:'cms_session',value:session,url:baseURL}]);
-  await page.goto('/app/qr');await page.getByRole('button',{name:'Tạo thiệp và QR',exact:true}).click();
+  await page.goto('/app/edit');const birthday=page.getByLabel('Ngày sinh người nhận');await expect(birthday).not.toHaveAttribute('max',/.+/);await birthday.fill('2028-02-29');await page.getByRole('link',{name:/Tạo QR/}).click();await page.getByRole('button',{name:'Tạo thiệp và QR',exact:true}).click();
   const input=page.getByLabel('Liên kết chia sẻ thiệp');await expect(input).toHaveValue(/\/s\/[0-9a-f-]+#key=.+/);
   const shareUrl=await input.inputValue();shareId=new URL(shareUrl).pathname.split('/').pop();
   expect(shareUrl.startsWith(baseURL+'/s/')).toBeTruthy();await expect(page.getByRole('link',{name:'Tải QR PNG'})).toHaveAttribute('href',/^data:image\/png;base64,/);
@@ -29,6 +29,7 @@ test('real shared QR link opens directly in a fresh browser without account logi
   expect(requests.some(path=>/\/api\/platform\/(me|login|register)$/.test(path))).toBeFalsy();
   expect((await guest.cookies()).some(cookie=>cookie.name==='cms_session')).toBeFalsy();
   const receiverApi=guest.request;
+  const sharedPage=await receiverApi.get(`${baseURL}/api/platform/viewer/${shareId}/page`);expect((await sharedPage.json()).cardData.birthDate).toBe('2028-02-29');
   expect((await receiverApi.get(baseURL+'/api/platform/me')).status()).toBe(401);
   expect((await receiverApi.put(baseURL+'/api/platform/page',{headers:{Origin:baseURL},data:{revision:1,content}})).status()).toBe(401);
   expect((await receiverApi.get(`${baseURL}/api/platform/viewer/${shareId}/media/${media}`)).status()).toBe(200);

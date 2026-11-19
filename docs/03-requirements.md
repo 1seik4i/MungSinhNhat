@@ -37,7 +37,7 @@ FR-17 là phạm vi quản trị tối thiểu; có thể triển khai bằng c�
 | Trường/tài nguyên | Giới hạn đề xuất | Khi không hợp lệ |
 |---|---|---|
 | Tên người nhận | 1–120 ký tự sau trim khi generate | 422, lỗi tại trường |
-| Ngày sinh | YYYY-MM-DD, ngày lịch hợp lệ, không ở tương lai theo Asia/Saigon; là ngày sinh, không phải ngày tổ chức | 422; gồm kiểm tra năm nhuận |
+| Ngày sinh | YYYY-MM-DD, ngày lịch hợp lệ, cho phép ngày trong tương lai để chuẩn bị thiệp trước | 422; gồm kiểm tra năm nhuận |
 | Tiêu đề / lời chúc | 1–200 / 1–5.000 ký tự sau trim khi generate | 422; nháp cho phép rỗng |
 | Tiêu đề album / chú thích ảnh | Tối đa 200 / 1.000 ký tự | 422 |
 | Ngày kỷ niệm | Không bắt buộc; YYYY-MM-DD nếu nhập | 422; khác chuỗi tự do “Hôm nay” ở editor cũ |

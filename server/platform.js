@@ -84,7 +84,7 @@ export function validateContent(content, complete = false) {
   }
   if(content.cardData.gender!==undefined&&!['male','female'].includes(content.cardData.gender)) throw fail(422,'Giới tính không hợp lệ.');
   const date = content.cardData.birthDate;
-  if (date && (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(Date.parse(date)) || new Date(date).toISOString().slice(0,10) !== date || date > new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Saigon',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()))) throw fail(422,'Ngày sinh không hợp lệ.');
+  if (date && (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(Date.parse(date)) || new Date(date).toISOString().slice(0,10) !== date)) throw fail(422,'Ngày sinh không hợp lệ.');
   const sourceOK = source => typeof source === 'string' && (defaults.tracks.some(t => t.source === source) || /^\/api\/platform\/media\/[0-9a-f-]{36}$/.test(source));
   const https = value => { try { const u=new URL(value); return u.protocol==='https:' && !u.username && !u.password && !/^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|\[|0\.)/.test(u.hostname); } catch { return false; } };
   if (!content.memories.every(m => m && typeof m.id === 'string' && typeof m.caption === 'string' && m.caption.length <= 1000 && ((m.image===''&&!complete) || sourceOK(m.image) || https(m.image)))) throw fail(422,'Ảnh kỷ niệm không hợp lệ.');
