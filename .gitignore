@@ -1,4 +1,8 @@
 node_modules
+playwright-report/
+test-results/
+.reference/
+.creator-test-*/
 .env
 .env.*
 !.env.example

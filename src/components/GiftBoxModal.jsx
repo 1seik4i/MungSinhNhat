@@ -1,47 +1,27 @@
+import { useRecipientCopy } from '../hooks/useRecipientCopy';
 import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Award, Gift, RotateCcw, Ticket } from 'lucide-react';
 import { soundEngine } from '../utils/audioSynth';
 import { blastConfetti, blastHearts, launchFireworksShow } from '../utils/confettiHelper';
+import { DEFAULT_GIFT_REWARDS, pickRewardIndex, rewardRollTarget } from '../../shared/giftRewards';
 import giftBoxImage from '../assets/gift-box-real.png';
 
-const REWARDS = [
-  { title: 'Voucher Trà Sữa Full Topping', desc: 'Đổi một ly trà sữa size L, chọn topping em thích.', code: 'MILKTEA-HAPPY-BDAY', tone: '#d95f79' },
-  { title: 'Vé “Một Điều Ước”', desc: 'Người tặng sẽ thực hiện một điều ước trong khả năng.', code: 'VIP-WISH-UNLIMITED', tone: '#c18b3e' },
-  { title: 'Phiếu Bao Ăn Một Bữa', desc: 'Chọn món em thèm, người tặng mời một bữa thật ngon.', code: 'FOOD-LOVER-2026', tone: '#5d9c97' },
-  { title: 'Voucher Phim Đôi', desc: 'Một buổi xem phim kèm bắp nước để em thư giãn.', code: 'MOVIE-NIGHT-FOR2', tone: '#8867c6' },
-  { title: 'Phiếu Cà Phê Hẹn Hò', desc: 'Một cuộc hẹn cà phê và câu chuyện em muốn kể.', code: 'COFFEE-DATE-2026', tone: '#b87354' },
-  { title: 'Quỹ Mua Sách', desc: 'Một cuốn sách bất kỳ em muốn thêm vào kệ.', code: 'BOOKS-FOR-MINHANH', tone: '#517fa4' },
-  { title: 'Ngày Không Làm Gì', desc: 'Một ngày được chiều chuộng và không cần bận tâm gì.', code: 'REST-DAY-PASS', tone: '#a56c88' },
-  { title: 'Voucher Bánh Ngọt', desc: 'Chọn chiếc bánh em thích để kéo dài niềm vui sinh nhật.', code: 'SWEET-TREAT-2026', tone: '#d17b5d' },
-];
-
-const REWARD_WEIGHTS = [24, 28, 22, 9, 7, 4, 3, 3];
 const ITEM_WIDTH = 232;
-const TRACK = Array.from({ length: 40 }, (_, index) => REWARDS[index % REWARDS.length]);
-
-function pickLuckyRewardIndex() {
-  const total = REWARD_WEIGHTS.reduce((sum, weight) => sum + weight, 0);
-  let cursor = Math.random() * total;
-  for (let index = 0; index < REWARD_WEIGHTS.length; index += 1) {
-    cursor -= REWARD_WEIGHTS[index];
-    if (cursor <= 0) return index;
-  }
-  return 0;
-}
-
-export default function GiftBoxModal({ isOpen, onClose, recipientName = '' }) {
+export default function GiftBoxModal({ isOpen, onClose, recipientName = '', rewards = DEFAULT_GIFT_REWARDS }) {
+  const copy=useRecipientCopy();
   const [phase, setPhase] = useState('idle');
   const [targetIndex, setTargetIndex] = useState(22);
   const [rewardIndex, setRewardIndex] = useState(0);
 
-  const selectedReward = REWARDS[rewardIndex];
-  const rollX = useMemo(() => 336 - (targetIndex * ITEM_WIDTH + ITEM_WIDTH / 2), [targetIndex]);
+  const selectedReward = rewards[rewardIndex];
+  const track = useMemo(() => rewards.length ? Array.from({length:Math.ceil(24/rewards.length)*rewards.length+rewards.length+4},(_,index)=>rewards[index%rewards.length]) : [],[rewards]);
+  const rollX = useMemo(() => -(targetIndex * ITEM_WIDTH + ITEM_WIDTH / 2), [targetIndex]);
 
   const openCase = () => {
-    if (phase === 'rolling') return;
-    const nextReward = pickLuckyRewardIndex();
-    const nextTarget = 24 + nextReward;
+    if (phase === 'rolling' || !rewards.length) return;
+    const nextReward = pickRewardIndex(rewards);
+    const nextTarget = rewardRollTarget(rewards.length,nextReward);
     setTargetIndex(nextTarget);
     setRewardIndex(nextReward);
     setPhase('rolling');
@@ -58,7 +38,7 @@ export default function GiftBoxModal({ isOpen, onClose, recipientName = '' }) {
 
   const resetCase = () => setPhase('idle');
 
-  if (!isOpen) return null;
+  if (!isOpen || !rewards.length) return null;
 
   return (
     <AnimatePresence>
@@ -88,11 +68,11 @@ export default function GiftBoxModal({ isOpen, onClose, recipientName = '' }) {
           {phase === 'rolling' && (
             <div className="gift-case-rolling">
               <span className="gift-case-kicker">VÒNG QUAY VOUCHER</span>
-              <h2>Quà nào sẽ thuộc về em?</h2>
+              <h2>Quà nào sẽ thuộc về {copy.you}?</h2>
               <div className="gift-roulette">
                 <div className="gift-roulette-marker" />
-                <motion.div className="gift-roulette-track" initial={{ x: 0 }} animate={{ x: rollX }} transition={{ duration: 7.4, ease: [0.08, 0.75, 0.16, 1] }} onAnimationComplete={finishRoll}>
-                  {TRACK.map((reward, index) => (
+                <motion.div className="gift-roulette-track" style={{left:'50%'}} initial={{ x: 0 }} animate={{ x: rollX }} transition={{ duration: 7.4, ease: [0.08, 0.75, 0.16, 1] }} onAnimationComplete={finishRoll}>
+                  {track.map((reward, index) => (
                     <div key={`${reward.code}-${index}`} className="gift-roulette-card" style={{ borderColor: `${reward.tone}99` }}>
                       <span style={{ background: `${reward.tone}22`, color: reward.tone }}><Ticket size={17} /></span>
                       <strong>{reward.title}</strong>
@@ -107,12 +87,12 @@ export default function GiftBoxModal({ isOpen, onClose, recipientName = '' }) {
 
           {phase === 'result' && (
             <motion.div initial={{ opacity: 0, scale: .86 }} animate={{ opacity: 1, scale: 1 }} className="gift-case-result">
-              <span className="gift-case-kicker">VOUCHER CỦA EM</span>
+              <span className="gift-case-kicker">VOUCHER CỦA {copy.you.toUpperCase()}</span>
               <h2>Chúc mừng, {recipientName || 'người nhận'}!</h2>
               <div className="gift-case-reward" style={{ '--reward-tone': selectedReward.tone }}>
                 <Award size={28} />
                 <h3>{selectedReward.title}</h3>
-                <p>{selectedReward.desc}</p>
+                <p>{selectedReward.desc===DEFAULT_GIFT_REWARDS.find(r=>r.id===selectedReward.id)?.desc?selectedReward.desc.replace(/\bem\b/g,copy.you):selectedReward.desc}</p>
                 <code>{selectedReward.code}</code>
               </div>
               <div className="gift-case-actions">

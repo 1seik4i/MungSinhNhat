@@ -1,3 +1,4 @@
+import { useRecipientCopy } from '../hooks/useRecipientCopy';
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { soundEngine } from '../utils/audioSynth';
@@ -13,7 +14,8 @@ const CANDLE_POSITIONS = [
   { left: '61.3%', top: '7.6%' },
 ];
 
-export default function InteractiveCake() {
+export default function InteractiveCake({ onOpenGift, onOpenFortune, giftEnabled = true }) {
+  const copy=useRecipientCopy();
   const [candles, setCandles] = useState([true, true, true, true, true]);
   const [isAllBlown, setIsAllBlown] = useState(false);
   const [wishMade, setWishMade] = useState('');
@@ -197,15 +199,7 @@ export default function InteractiveCake() {
     setWishMade('');
     blastStars();
     launchWishCelebration();
-    try {
-      await fetch('/api/wishes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ wish }),
-      });
-    } catch (error) {
-      console.warn('Could not save birthday wish:', error);
-    }
+    // Wishes stay in this tab; viewing a gift never grants server write access.
   };
 
   return (
@@ -353,11 +347,15 @@ export default function InteractiveCake() {
               }}
             >
               <div style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--accent-gold)' }}>
-                ✨ Ước Nguyện Của Em Đã Bay Lên Vũ Trụ! ✨
+                {copy.wishTitle}
               </div>
               <p style={{ fontSize: '0.95rem', color: 'var(--text-main, #2d2427)', fontWeight: 500, marginTop: '6px', lineHeight: 1.5 }}>
-                Cả bầu trời sao đang lắng nghe và sẽ biến mọi điều ước tốt đẹp nhất của em thành hiện thực! 🌟
+                Cả bầu trời sao đang lắng nghe và sẽ biến mọi điều ước tốt đẹp nhất của {copy.you} thành hiện thực! 🌟
               </p>
+              <div style={{display:'flex',justifyContent:'center',gap:12,flexWrap:'wrap',marginTop:18}}>
+                {giftEnabled&&onOpenGift&&<button type="button" className="btn-primary" onClick={onOpenGift}>🎁 Quay quà sinh nhật</button>}
+                {onOpenFortune&&<button type="button" className="btn-secondary" onClick={onOpenFortune}>🥠 Gieo quẻ may mắn</button>}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -369,7 +367,7 @@ export default function InteractiveCake() {
               type="text"
               value={wishMade}
               onChange={(e) => setWishMade(e.target.value)}
-              placeholder="Gõ điều ước sinh nhật bí mật của em vào đây..."
+              placeholder={copy.wishPlaceholder}
               aria-label="Điều ước sinh nhật"
               className="wish-input"
               style={{

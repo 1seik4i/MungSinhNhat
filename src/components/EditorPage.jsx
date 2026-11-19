@@ -1,25 +1,37 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, GripVertical, ImagePlus, Link, Music2, Plus, Save, Trash2, Upload, CheckCircle2, AlertCircle, Info, X, Loader2, LockKeyhole, LogOut } from 'lucide-react';
-import { getYouTubeVideoId, loadContentSettings, fetchServerContentSettings, saveAudioFile, saveContentSettings, saveImageFile, deleteAudioFile, getEditorSession, loginEditor, logoutEditor } from '../utils/contentSettings';
+import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { ArrowLeft, Music2, Save, CheckCircle2, AlertCircle, Info, X, Loader2, LockKeyhole, LogOut } from 'lucide-react';
+import * as legacyServices from '../utils/contentSettings';
+import CardBasicsEditor from './CardBasicsEditor';
+import MusicEditor from './MusicEditor';
+import './editor-workbench.css';
+import { Gift, Images, Heart, Eye, Check } from 'lucide-react';
+import MemoriesEditor from './MemoriesEditor';
+import { SurpriseCardFields } from './FortunesEditor';
+import GiftRewardsEditor from './GiftRewardsEditor';
+import { getGiftRewards } from '../../shared/giftRewards';
 
 const fieldStyle = { width: '100%', marginTop: '6px', boxSizing: 'border-box', border: '1px solid #ead6d2', borderRadius: '10px', padding: '11px 12px', font: 'inherit', fontWeight: 400, background: '#fffdfb' };
 
-export default function EditorPage({ onExit, onSaved }) {
-  const [settings, setSettings] = useState(loadContentSettings);
-  const [selectedMemoryId, setSelectedMemoryId] = useState(() => loadContentSettings().memories[0]?.id);
-  const [musicUrl, setMusicUrl] = useState('');
+export default forwardRef(function EditorPage({ onExit, onSaved, services, initialContent, onSettingsChange, onPreview, embedded = false }, ref) {
+  const { loadContentSettings, fetchServerContentSettings, saveAudioFile, saveContentSettings, saveImageFile, getEditorSession, loginEditor, logoutEditor } = services || legacyServices;
+  const initial = () => { const content=structuredClone(initialContent || loadContentSettings()); return {...content,giftRewards:structuredClone(getGiftRewards(content))}; };
+  const [settings, setSettings] = useState(initial);
+  const [activeSection,setActiveSection]=useState('basics');
+  const [savedSignature,setSavedSignature]=useState(()=>JSON.stringify(initialContent||initial()));
+  const [isProcessingAudio,setIsProcessingAudio]=useState(false);
+  const panelTop=useRef(null);
+  const editorRoot=useRef(null);
+  const saveHandler=useRef(null);
   const [notification, setNotification] = useState(null); // { type: 'success' | 'error' | 'info', text: string }
   const [isProcessingImage, setIsProcessingImage] = useState(false);
-  const [draggedTrackId, setDraggedTrackId] = useState(null);
-  const [sessionState, setSessionState] = useState('loading');
+  const [sessionState, setSessionState] = useState(services ? 'authenticated' : 'loading');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
-  const musicFileRef = useRef(null);
-  const imageFileRef = useRef(null);
-  const selectedMemory = settings.memories.find((memory) => memory.id === selectedMemoryId) || settings.memories[0];
+  useEffect(() => { onSettingsChange?.(settings); }, [settings, onSettingsChange]);
 
   useEffect(() => {
+    if (services) return;
     getEditorSession().then((session) => {
       if (!session.configured) return setSessionState('unconfigured');
       if (!session.authenticated) return setSessionState('locked');
@@ -27,9 +39,7 @@ export default function EditorPage({ onExit, onSaved }) {
       fetchServerContentSettings().then((serverSettings) => {
         if (serverSettings) {
           setSettings(serverSettings);
-          if (!serverSettings.memories?.some((item) => item.id === selectedMemoryId)) {
-            setSelectedMemoryId(serverSettings.memories?.[0]?.id);
-          }
+
         }
       });
     }).catch(() => {
@@ -46,19 +56,25 @@ export default function EditorPage({ onExit, onSaved }) {
     }
   };
 
-  const save = async () => {
+  const persist = async () => {
+    if (isProcessingImage || isProcessingAudio) throw new Error('Đang tải ảnh. Vui lòng chờ hoàn tất trước khi lưu hoặc chuyển bước.');
     setIsSaving(true);
     try {
       const savedSettings = await saveContentSettings(settings);
       showNotification('success', 'Đã lưu tất cả thay đổi thành công!');
+      setSavedSignature(JSON.stringify(savedSettings));
       onSaved?.(savedSettings);
+      return savedSettings;
     } catch (err) {
       console.error(err);
       showNotification('error', err.message || 'Không thể lưu dữ liệu. Vui lòng kiểm tra lại dung lượng ảnh!');
+      throw err;
     } finally {
       setIsSaving(false);
     }
   };
+  const save = () => persist().catch(() => {});
+  useImperativeHandle(ref, () => ({ save: persist, isUploading: () => isProcessingImage || isProcessingAudio }));
 
   const updateCardData = (key, value) => setSettings((current) => ({ ...current, cardData: { ...current.cardData, [key]: value } }));
   const updateSurpriseCard = (cardKey, field, value) => setSettings((current) => ({
@@ -71,149 +87,13 @@ export default function EditorPage({ onExit, onSaved }) {
       },
     },
   }));
-  const updateMemory = (key, value) => setSettings((current) => ({ ...current, memories: current.memories.map((memory) => memory.id === selectedMemory.id ? { ...memory, [key]: value } : memory) }));
-
-  const addMemory = () => {
-    const id = crypto.randomUUID();
-    const newMemory = { id, title: 'Kỷ niệm mới', date: 'Hôm nay', caption: 'Một khoảnh khắc đáng nhớ của tuổi mới.', image: '', rotate: 0 };
-    const updatedSettings = { ...settings, memories: [...settings.memories, newMemory] };
-    setSettings(updatedSettings);
-    setSelectedMemoryId(id);
-    showNotification('info', 'Đã thêm một ảnh kỷ niệm mới. Hãy chọn ảnh và điền thông điệp nhé!');
-  };
-
-  const removeMemory = async () => {
-    if (settings.memories.length <= 1) return showNotification('error', 'Cần giữ lại ít nhất một ảnh kỷ niệm trong album.');
-    const remaining = settings.memories.filter((memory) => memory.id !== selectedMemory.id);
-    const updatedSettings = { ...settings, memories: remaining };
-    setSettings(updatedSettings);
-    setSelectedMemoryId(remaining[0].id);
-    try {
-      await saveContentSettings(updatedSettings);
-      showNotification('info', 'Đã xóa kỷ niệm và giải phóng bộ nhớ lưu trữ!');
-      onSaved?.();
-    } catch (err) {
-      console.warn(err);
-    }
-  };
-
-  const clearImage = async () => {
-    if (!selectedMemory.image) return;
-    const updatedMemories = settings.memories.map((memory) =>
-      memory.id === selectedMemory.id ? { ...memory, image: '' } : memory
-    );
-    const updatedSettings = { ...settings, memories: updatedMemories };
-    setSettings(updatedSettings);
-    try {
-      await saveContentSettings(updatedSettings);
-      showNotification('info', 'Đã gỡ ảnh và giải phóng bộ nhớ!');
-      onSaved?.();
-    } catch (err) {
-      console.warn(err);
-    }
-  };
-
-  const handleImageUpload = async (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      showNotification('error', 'Vui lòng chọn tệp hình ảnh hợp lệ (JPG, PNG, WebP...).');
-      return;
-    }
-
-    setIsProcessingImage(true);
-    showNotification('info', 'Đang nén và tối ưu hóa hình ảnh...', 2000);
-
-    try {
-      const imageSource = await saveImageFile(file);
-      const updatedMemories = settings.memories.map((memory) =>
-        memory.id === selectedMemory.id ? { ...memory, image: imageSource } : memory
-      );
-      const updatedSettings = { ...settings, memories: updatedMemories };
-      setSettings(updatedSettings);
-      await saveContentSettings(updatedSettings);
-      onSaved?.();
-      showNotification('success', 'Đã tải, tối ưu và lưu ảnh thành công!');
-    } catch (err) {
-      console.error(err);
-      showNotification('error', err.message || 'Không thể đọc và xử lý tệp ảnh này.');
-    } finally {
-      setIsProcessingImage(false);
-      if (event.target) event.target.value = '';
-    }
-  };
-
-  const addLink = async () => {
-    const url = musicUrl.trim();
-    if (!url) return showNotification('error', 'Vui lòng nhập đường link bài hát hoặc YouTube.');
-    const youtubeId = getYouTubeVideoId(url);
-    try {
-      let name = url.split('/').pop()?.split('?')[0] || 'Bài hát từ liên kết';
-      if (youtubeId) {
-        try {
-          const response = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(`https://www.youtube.com/watch?v=${youtubeId}`)}&format=json`);
-          const data = await response.json();
-          name = data.title || 'Bài hát từ YouTube';
-        } catch {
-          name = `YouTube · ${youtubeId}`;
-        }
-      }
-      const updatedTracks = [...settings.tracks, { id: crypto.randomUUID(), name, type: youtubeId ? 'youtube' : 'url', source: youtubeId || url }];
-      const updatedSettings = { ...settings, tracks: updatedTracks };
-      setSettings(updatedSettings);
-      await saveContentSettings(updatedSettings);
-      onSaved?.();
-      setMusicUrl('');
-      showNotification('success', `Đã thêm bài hát: ${name}`);
-    } catch (error) {
-      showNotification('error', error.message || 'Không thể thêm bài hát.');
-    }
-  };
-
-  const addAudioFile = async (file) => {
-    if (!file || !file.type.startsWith('audio/')) return showNotification('error', 'Hãy chọn tệp âm thanh hợp lệ (.mp3, .wav, .m4a...).');
-    try {
-      const fileId = await saveAudioFile(file);
-      const name = file.name.replace(/\.[^/.]+$/, '');
-      const updatedTracks = [...settings.tracks, { id: crypto.randomUUID(), name, type: 'file', source: fileId }];
-      const updatedSettings = { ...settings, tracks: updatedTracks };
-      setSettings(updatedSettings);
-      await saveContentSettings(updatedSettings);
-      onSaved?.();
-      showNotification('success', `Đã tải lên tệp nhạc: ${name}`);
-    } catch (err) {
-      console.error(err);
-      showNotification('error', 'Không thể lưu tệp âm thanh vào bộ nhớ trình duyệt.');
-    }
-  };
-
-  const removeTrack = async (trackId) => {
-    const trackToRemove = settings.tracks.find((item) => item.id === trackId);
-    if (trackToRemove?.type === 'file' && trackToRemove.source) {
-      await deleteAudioFile(trackToRemove.source);
-    }
-    const updatedTracks = settings.tracks.filter((item) => item.id !== trackId);
-    const updatedSettings = { ...settings, tracks: updatedTracks };
-    setSettings(updatedSettings);
-    try {
-      await saveContentSettings(updatedSettings);
-      showNotification('info', 'Đã xóa bài hát và giải phóng bộ nhớ!');
-      onSaved?.();
-    } catch (err) {
-      console.warn(err);
-    }
-  };
-
-  const placeTrack = (targetId) => setSettings((current) => {
-    const fromIndex = current.tracks.findIndex((track) => track.id === draggedTrackId);
-    const toIndex = current.tracks.findIndex((track) => track.id === targetId);
-    if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return current;
-    const tracks = [...current.tracks];
-    const [track] = tracks.splice(fromIndex, 1);
-    tracks.splice(toIndex, 0, track);
-    return { ...current, tracks };
-  });
+  const locked=isSaving||isProcessingImage||isProcessingAudio;
+  const dirty=JSON.stringify(settings)!==savedSignature;
+  const missing=Object.entries({name:'tên người nhận',birthDate:'ngày sinh',title:'tiêu đề',message:'lời chúc'}).filter(([key])=>!settings.cardData[key]?.trim());
+  const sections=[{id:'basics',label:'Thông tin thiệp',Icon:Heart,count:`${4-missing.length}/4`},{id:'photos',label:'Ảnh kỷ niệm',Icon:Images,count:settings.memories.length},{id:'music',label:'Nhạc nền',Icon:Music2,count:settings.tracks.length},{id:'gifts',label:'Hộp quà',Icon:Gift,count:settings.giftRewards.length}];
+  const selectSection=id=>{setActiveSection(id);panelTop.current?.scrollIntoView?.({behavior:'smooth',block:'start'});};
+  saveHandler.current=save;
+  useEffect(()=>{const key=e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'&&editorRoot.current&&!editorRoot.current.closest('[hidden]')){e.preventDefault();saveHandler.current?.();}};window.addEventListener('keydown',key);return()=>window.removeEventListener('keydown',key);},[]);
 
   const handleLogin = async (event) => {
     event.preventDefault();
@@ -225,7 +105,6 @@ export default function EditorPage({ onExit, onSaved }) {
       const serverSettings = await fetchServerContentSettings();
       if (serverSettings) {
         setSettings(serverSettings);
-        setSelectedMemoryId(serverSettings.memories?.[0]?.id);
       }
     } catch (error) {
       setLoginError(error.message || 'Không thể đăng nhập.');
@@ -262,13 +141,13 @@ export default function EditorPage({ onExit, onSaved }) {
   }
 
   return (
-    <main style={{ minHeight: '100vh', padding: '30px 16px 100px', background: 'linear-gradient(135deg, #fff7ef, #ffe9e8 55%, #fce5dc)', position: 'relative' }}>
+    <main ref={editorRoot} className="editor-page" style={{ minHeight: '100vh', padding: '30px 16px 100px', background: 'linear-gradient(135deg, #fff7ef, #ffe9e8 55%, #fce5dc)', position: 'relative' }}>
       {/* Floating Notification Toast */}
       {notification && (
         <div
           style={{
             position: 'fixed',
-            top: '20px',
+            top: embedded ? '150px' : '20px',
             left: '50%',
             transform: 'translateX(-50%)',
             zIndex: 9999,
@@ -319,86 +198,34 @@ export default function EditorPage({ onExit, onSaved }) {
         </div>
       )}
 
-      <div style={{ maxWidth: '960px', margin: '0 auto' }}>
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '14px', flexWrap: 'wrap', marginBottom: '26px' }}>
+      <div className="editor-workbench">
+        <header className="editor-welcome" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '14px', flexWrap: 'wrap', marginBottom: '26px' }}>
           <div><p style={{ color: 'var(--accent-primary)', fontFamily: 'var(--font-handwriting)', fontSize: '1.5rem', fontWeight: 700 }}>Bảng chỉnh sửa</p><h1 style={{ fontFamily: 'var(--font-handwriting)', fontSize: 'clamp(2.2rem, 6vw, 3.2rem)' }}>Nội dung cho thiệp sinh nhật</h1></div>
-          <div style={{ display: 'flex', gap: '8px' }}><button onClick={handleLogout} className="btn-secondary"><LogOut size={17} /><span>Đăng xuất</span></button><button onClick={onExit} className="btn-secondary"><ArrowLeft size={17} /><span>Về thiệp</span></button></div>
+          {!embedded && <div style={{ display: 'flex', gap: '8px' }}><button onClick={handleLogout} className="btn-secondary"><LogOut size={17} /><span>Đăng xuất</span></button><button onClick={onExit} className="btn-secondary"><ArrowLeft size={17} /><span>Về thiệp</span></button></div>}
         </header>
+        <p className="editor-intro">Bắt đầu với lời chúc. Sau đó chọn ảnh, nhạc và những bất ngờ bạn muốn gửi. Mẫu quà và quẻ đã sẵn sàng nếu bạn muốn dùng ngay.</p>
+        <div className="editor-readiness"><Info size={18}/><span>{missing.length?`Còn thiếu ${missing.map(([,label])=>label).join(', ')} để tạo thiệp hoàn chỉnh. Bạn vẫn có thể lưu nháp.`:'Bốn thông tin chính đã đủ. Hãy xem thiệp trước khi tạo QR.'}</span>{missing.length>0&&<button type="button" disabled={locked} onClick={()=>{selectSection('basics');requestAnimationFrame(()=>editorRoot.current?.querySelector(`[name="${missing[0][0]==='name'?'recipientName':missing[0][0]==='birthDate'?'birthDate':missing[0][0]}"]`)?.focus());}}>Bổ sung</button>}</div>
+        <div className="editor-layout">
+          <aside className="editor-side-nav"><p>NỘI DUNG CHIẾC THIỆP</p><div role="tablist" aria-label="Các mục chỉnh sửa">{sections.map(({id,label,Icon,count},index)=><button type="button" key={id} id={`editor-tab-${id}`} role="tab" aria-label={`Chỉnh mục ${label}`} aria-selected={activeSection===id} aria-controls={`editor-panel-${id}`} tabIndex={activeSection===id?0:-1} className={activeSection===id?'is-active':''} disabled={locked} onClick={()=>selectSection(id)} onKeyDown={e=>{if(['ArrowRight','ArrowDown','ArrowLeft','ArrowUp','Home','End'].includes(e.key)){e.preventDefault();const target=e.key==='Home'?0:e.key==='End'?sections.length-1:(index+(['ArrowRight','ArrowDown'].includes(e.key)?1:-1)+sections.length)%sections.length;selectSection(sections[target].id);document.getElementById(`editor-tab-${sections[target].id}`)?.focus();}}}><Icon size={18}/><span>{label}</span><small>{count}</small></button>)}</div><div className="editor-side-note">Chỉnh từng mục theo ý bạn. Chuyển mục không làm mất nội dung. Nhớ lưu trước khi rời trang.</div></aside>
+          <div className="editor-panels" ref={panelTop}>
 
-        <section className="glass-panel" style={{ padding: '28px', marginBottom: '20px' }}>
-          <h2 style={{ fontFamily: 'var(--font-handwriting)', fontSize: '2rem', marginBottom: '18px' }}>Thông tin thiệp</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px' }}>
-            <label style={{ color: 'var(--text-muted)', fontWeight: 700, fontSize: '.9rem' }}>Tên người nhận<input value={settings.cardData.name} onChange={(event) => updateCardData('name', event.target.value)} style={fieldStyle} /></label>
-            <label style={{ color: 'var(--text-muted)', fontWeight: 700, fontSize: '.9rem' }}>Ngày sinh nhật<input value={settings.cardData.birthDate} onChange={(event) => updateCardData('birthDate', event.target.value)} placeholder="05 / 10" style={fieldStyle} /></label>
-            <label style={{ gridColumn: '1 / -1', color: 'var(--text-muted)', fontWeight: 700, fontSize: '.9rem' }}>Tiêu đề thiệp<input value={settings.cardData.title} onChange={(event) => updateCardData('title', event.target.value)} style={fieldStyle} /></label>
-            <label style={{ gridColumn: '1 / -1', color: 'var(--text-muted)', fontWeight: 700, fontSize: '.9rem' }}>Lời chúc<textarea rows="4" value={settings.cardData.message} onChange={(event) => updateCardData('message', event.target.value)} style={{ ...fieldStyle, resize: 'vertical', lineHeight: 1.55 }} /></label>
+
+        <div className="editor-panel" role="tabpanel" id="editor-panel-basics" aria-labelledby="editor-tab-basics" hidden={activeSection!=='basics'}><CardBasicsEditor card={settings.cardData} onChange={updateCardData}/></div>
+        <div className="editor-panel" role="tabpanel" id="editor-panel-gifts" aria-labelledby="editor-tab-gifts" hidden={activeSection!=='gifts'}>
+        <GiftRewardsEditor rewards={settings.giftRewards} onChange={giftRewards=>setSettings(current=>({...current,giftRewards}))}>
+          <SurpriseCardFields label="hộp quà" card={settings.surpriseCards.gift} onChange={(field,value)=>updateSurpriseCard('gift',field,value)}/>
+        </GiftRewardsEditor></div>
+        <div className="editor-panel" role="tabpanel" id="editor-panel-photos" aria-labelledby="editor-tab-photos" hidden={activeSection!=='photos'}>
+        <MemoriesEditor memories={settings.memories} uploadImage={saveImageFile} onUploadingChange={setIsProcessingImage} onChange={update=>setSettings(current=>({...current,memories:typeof update==='function'?update(current.memories):update}))}/></div>
+
+
+        <div className="editor-panel" role="tabpanel" id="editor-panel-music" aria-labelledby="editor-tab-music" hidden={activeSection!=='music'}><MusicEditor tracks={settings.tracks} uploadAudio={saveAudioFile} onUploadingChange={setIsProcessingAudio} onChange={update=>setSettings(current=>({...current,tracks:typeof update==='function'?update(current.tracks):update}))}/></div>
           </div>
-        </section>
-
-        <section className="glass-panel" style={{ padding: '28px', marginBottom: '20px' }}>
-          <h2 style={{ fontFamily: 'var(--font-handwriting)', fontSize: '2rem', marginBottom: '8px' }}>Hộp quà và Gieo thẻ</h2>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '18px' }}>Nội dung hai lựa chọn bất ngờ trên trang chính.</p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '18px' }}>
-            {[
-              ['gift', 'Hộp quà'],
-              ['fortune', 'Gieo thẻ'],
-            ].map(([key, label]) => {
-              const card = settings.surpriseCards?.[key] || {};
-              return (
-                <div key={key} style={{ display: 'grid', gap: '10px', padding: '16px', borderRadius: '8px', background: 'rgba(255,255,255,.45)', border: '1px solid #ead6d2' }}>
-                  <h3 style={{ fontFamily: 'var(--font-handwriting)', fontSize: '1.45rem' }}>{label}</h3>
-                  <label style={{ color: 'var(--text-muted)', fontWeight: 700, fontSize: '.9rem' }}>Tiêu đề<input value={card.title || ''} onChange={(event) => updateSurpriseCard(key, 'title', event.target.value)} style={fieldStyle} /></label>
-                  <label style={{ color: 'var(--text-muted)', fontWeight: 700, fontSize: '.9rem' }}>Mô tả<textarea rows="2" value={card.description || ''} onChange={(event) => updateSurpriseCard(key, 'description', event.target.value)} style={{ ...fieldStyle, resize: 'vertical' }} /></label>
-                  <label style={{ color: 'var(--text-muted)', fontWeight: 700, fontSize: '.9rem' }}>Nhãn nút<input value={card.action || ''} onChange={(event) => updateSurpriseCard(key, 'action', event.target.value)} style={fieldStyle} /></label>
-                  <label style={{ color: 'var(--text-muted)', fontWeight: 700, fontSize: '.9rem' }}>Ảnh minh họa URL<input value={card.image || ''} onChange={(event) => updateSurpriseCard(key, 'image', event.target.value)} placeholder="https://..." style={fieldStyle} /></label>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        <section className="glass-panel" style={{ padding: '28px', marginBottom: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '18px' }}><div><h2 style={{ fontFamily: 'var(--font-handwriting)', fontSize: '2rem' }}>Góc kỷ niệm</h2><p style={{ color: 'var(--text-muted)', marginTop: '3px' }}>Chọn từng ảnh để thay đổi ảnh, tiêu đề và lời nhắn.</p></div><button onClick={addMemory} className="btn-secondary"><Plus size={17} /><span>Thêm kỷ niệm</span></button></div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(180px, .7fr) minmax(0, 1.3fr)', gap: '24px', alignItems: 'start' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>{settings.memories.map((memory) => <button key={memory.id} onClick={() => setSelectedMemoryId(memory.id)} style={{ border: selectedMemory?.id === memory.id ? '2px solid var(--accent-primary)' : '1px solid #ead6d2', background: '#fffaf7', padding: '7px', borderRadius: '12px', cursor: 'pointer', textAlign: 'left' }}><img src={memory.image || 'https://placehold.co/240x240/f8d9d5/875467?text=Ảnh'} alt="Kỷ niệm" style={{ width: '100%', aspectRatio: '1', objectFit: 'cover', borderRadius: '8px' }} /><span style={{ display: 'block', marginTop: '5px', fontSize: '.76rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{memory.title}</span></button>)}</div>
-            {selectedMemory && <div style={{ display: 'grid', gap: '12px' }}>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                <label className="btn-secondary" style={{ cursor: isProcessingImage ? 'not-allowed' : 'pointer', opacity: isProcessingImage ? 0.7 : 1 }}>
-                  {isProcessingImage ? <Loader2 size={17} className="animate-spin" /> : <ImagePlus size={17} />}
-                  <span>{isProcessingImage ? 'Đang xử lý ảnh...' : selectedMemory?.image ? 'Đổi ảnh khác' : 'Chọn ảnh từ máy'}</span>
-                  <input ref={imageFileRef} type="file" hidden accept="image/*" disabled={isProcessingImage} onChange={handleImageUpload} />
-                </label>
-                {selectedMemory?.image && (
-                  <button onClick={clearImage} style={{ border: 0, background: 'transparent', color: '#c85e6f', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-                    <Trash2 size={17} />Gỡ ảnh
-                  </button>
-                )}
-                <button onClick={removeMemory} style={{ border: 0, background: 'transparent', color: '#888', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px', marginLeft: 'auto' }}>
-                  <Trash2 size={17} />Xóa khung này
-                </button>
-              </div>
-              <label style={{ color: 'var(--text-muted)', fontWeight: 700, fontSize: '.9rem' }}>Liên kết ảnh (hoặc URL ảnh online)<input value={selectedMemory.image} onChange={(event) => updateMemory('image', event.target.value)} placeholder="https://..." style={fieldStyle} /></label>
-              <label style={{ color: 'var(--text-muted)', fontWeight: 700, fontSize: '.9rem' }}>Tiêu đề<input value={selectedMemory.title} onChange={(event) => updateMemory('title', event.target.value)} style={fieldStyle} /></label>
-              <label style={{ color: 'var(--text-muted)', fontWeight: 700, fontSize: '.9rem' }}>Thời điểm<input value={selectedMemory.date} onChange={(event) => updateMemory('date', event.target.value)} style={fieldStyle} /></label>
-              <label style={{ color: 'var(--text-muted)', fontWeight: 700, fontSize: '.9rem' }}>Lời nhắn<textarea rows="3" value={selectedMemory.caption} onChange={(event) => updateMemory('caption', event.target.value)} style={{ ...fieldStyle, resize: 'vertical' }} /></label>
-            </div>}
-          </div>
-        </section>
-
-        <section className="glass-panel" style={{ padding: '28px' }}>
-          <h2 style={{ fontFamily: 'var(--font-handwriting)', fontSize: '2rem', marginBottom: '8px' }}>Nhạc nền</h2><p style={{ color: 'var(--text-muted)', marginBottom: '18px' }}>Dán liên kết YouTube, liên kết trực tiếp đến tệp nhạc hoặc kéo thả tệp MP3, WAV, M4A vào khung dưới đây.</p>
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '14px' }}><input value={musicUrl} onChange={(event) => setMusicUrl(event.target.value)} placeholder="Dán liên kết YouTube hoặc bài hát (.mp3, .wav...)" style={{ flex: '1 1 330px', border: '1px solid #ead6d2', borderRadius: '10px', padding: '11px 12px', font: 'inherit' }} /><button onClick={addLink} className="btn-secondary"><Link size={16} /><span>Thêm liên kết</span></button></div>
-          <div onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); addAudioFile(event.dataTransfer.files?.[0]); }} onClick={() => musicFileRef.current?.click()} style={{ border: '2px dashed #d99a92', borderRadius: '16px', padding: '25px', textAlign: 'center', cursor: 'pointer', background: 'rgba(255,255,255,.45)' }}><Upload size={25} color="var(--accent-primary)" style={{ marginBottom: '7px' }} /><div style={{ fontWeight: 700 }}>Kéo tệp nhạc vào đây</div><div style={{ color: 'var(--text-muted)', fontSize: '.86rem', marginTop: '3px' }}>hoặc nhấn để chọn tệp từ máy</div><input ref={musicFileRef} hidden type="file" accept="audio/*" onChange={(event) => addAudioFile(event.target.files?.[0])} /></div>
-          <div style={{ display: 'grid', gap: '9px', marginTop: '16px' }}>{settings.tracks.length === 0 ? <div style={{ color: 'var(--text-muted)', fontSize: '.9rem' }}>Chưa có bài hát riêng.</div> : settings.tracks.map((track) => <div key={track.id} draggable onDragStart={() => setDraggedTrackId(track.id)} onDragOver={(event) => event.preventDefault()} onDrop={() => { placeTrack(track.id); setDraggedTrackId(null); }} onDragEnd={() => setDraggedTrackId(null)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', padding: '11px 10px', borderRadius: '10px', background: draggedTrackId === track.id ? '#f9dedb' : '#fff8f5', border: draggedTrackId === track.id ? '1px dashed #c85e6f' : '1px solid transparent', cursor: 'grab' }}><span style={{ display: 'inline-flex', gap: '8px', alignItems: 'center', minWidth: 0, flex: 1 }}><GripVertical size={17} color="#b89791" /><Music2 size={17} color="var(--accent-primary)" /><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{track.name}</span></span><button onClick={() => removeTrack(track.id)} aria-label="Xóa bài hát" style={{ border: 0, background: 'transparent', color: '#c85e6f', cursor: 'pointer' }}><Trash2 size={17} /></button></div>)}</div>
-        </section>
-
-        <div style={{ position: 'sticky', bottom: '18px', display: 'flex', justifyContent: 'center', marginTop: '24px' }}>
-          <button onClick={save} disabled={isSaving} className="btn-primary" style={{ padding: '13px 28px', boxShadow: '0 10px 28px rgba(200,94,111,.3)', gap: '8px', opacity: isSaving ? .7 : 1 }}>
-            {isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
-            <span>{isSaving ? 'Đang lưu...' : 'Lưu thay đổi'}</span>
-          </button>
         </div>
+
+
+        <div className="editor-savebar"><div><CheckCircle2 size={19}/><span>{locked?'Đang xử lý…':dirty?'Có thay đổi chưa lưu':'Đã lưu nội dung'}<small>Ctrl / Cmd + S để lưu nhanh</small></span></div><div className="editor-savebar-actions"><button type="button" onClick={save} disabled={locked||!dirty} className="btn-secondary">{isSaving?<Loader2 size={17} className="animate-spin"/>:<Save size={17}/>} Lưu thay đổi</button>{onPreview&&<button type="button" className="btn-primary" disabled={locked} onClick={onPreview}><Eye size={17}/> Lưu và xem thiệp</button>}</div></div>
       </div>
     </main>
   );
-}
+});
